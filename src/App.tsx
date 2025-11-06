@@ -18,7 +18,7 @@ import {
     ExportFormat
 } from '@/lib/exportUtils';
 
-import { loadProspects } from '@/lib/mockData'; // now the CSV loader
+import { loadProspects } from '@/lib/csvLoader';
 
 import {
     Target,

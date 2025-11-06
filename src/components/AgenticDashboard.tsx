@@ -6,7 +6,7 @@ import {
   CardDescription,
   CardContent
 } from '@/components/ui/card';
-import { loadProspects } from '@/lib/mockData';
+import { loadProspects } from '@/lib/csvLoader';
 
 export default function AgenticDashboard() {
   const [prospects, setProspects] = useState([]);
