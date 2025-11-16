@@ -11,6 +11,7 @@
         "optimize": "vite optimize",
         "preview": "vite preview",
         "test": "vitest",
+        "test:watch": "vitest --watch",
         "test:ui": "vitest --ui",
         "test:coverage": "vitest --coverage",
         "postinstall": "node ./scripts/ensure-main-branch.mjs",
@@ -86,6 +87,7 @@
     "devDependencies": {
         "@eslint/js": "^9.21.0",
         "@tailwindcss/postcss": "^4.1.8",
+        "@testing-library/dom": "^10.4.0",
         "@testing-library/jest-dom": "^6.9.1",
         "@testing-library/react": "^16.3.0",
         "@testing-library/user-event": "^14.6.1",
