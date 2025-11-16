@@ -7,6 +7,8 @@
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.6-blue)](https://www.typescriptlang.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
+**NEW: Terminal CLI Tool** - Standalone command-line scraper for individual use without GUI. Perfect for field data collection. See [CLI_USAGE.md](./CLI_USAGE.md) for details.
+
 ## 🎯 Overview
 
 The UCC-MCA Intelligence Platform is a sophisticated lead generation tool that analyzes Uniform Commercial Code (UCC) filings to identify businesses with active financing and predict their likelihood of needing Merchant Cash Advances. The platform combines AI-powered analysis, automated data enrichment, and intelligent scoring to help MCA providers find and prioritize the best prospects.
@@ -21,6 +23,109 @@ The UCC-MCA Intelligence Platform is a sophisticated lead generation tool that a
 ✅ **Real-Time Monitoring** - Live prospect tracking and analytics with agent orchestration
 ✅ **Export Capabilities** - CSV, JSON, Excel formats
 ✅ **Security First** - Zero vulnerabilities, type-safe codebase
+
+## Table of Contents
+
+- [Features](#features)
+- [Quick Start](#quick-start)
+- [CLI Tool](#cli-tool)
+- [Technology Stack](#technology-stack)
+- [Getting Started](#getting-started)
+- [Project Structure](#project-structure)
+- [Documentation](#documentation)
+- [Contributing](#contributing)
+- [License](#license)
+
+## Quick Start
+
+### Terminal CLI (No GUI)
+
+For quick data scraping from the command line:
+
+```bash
+# Install dependencies
+npm install --legacy-peer-deps
+
+# List available states
+npm run scrape -- list-states
+
+# Scrape UCC filings
+npm run scrape -- scrape-ucc -c "Company Name" -s CA -o results.json
+
+# Enrich company data
+npm run scrape -- enrich -c "Company Name" -s CA -o enriched.json
+```
+
+See [CLI_USAGE.md](./CLI_USAGE.md) for complete CLI documentation.
+
+### Web Application
+
+```bash
+# Install and run the web app
+npm install --legacy-peer-deps
+npm run dev
+```
+
+## CLI Tool
+
+The platform includes a **standalone terminal-based scraper** for individual use:
+
+### CLI Features
+- 🔍 **UCC Filing Scraper**: Extract filings from CA, TX, FL state portals
+- 📊 **Data Enrichment**: Fetch data from SEC, OSHA, USPTO, Census, SAM.gov
+- 📝 **Multiple Formats**: Export as JSON or CSV
+- 🔄 **Batch Processing**: Process multiple companies from CSV files
+- 🛡️ **Anti-Detection**: Browser fingerprinting protection
+- ⏱️ **Rate Limiting**: Automatic throttling to respect site policies
+
+### Basic Usage
+
+```bash
+# Scrape UCC filings
+npm run scrape -- scrape-ucc -c "Acme Corporation" -s CA
+
+# Enrich company data from public sources
+npm run scrape -- enrich -c "Acme Corporation" -s CA
+
+# Normalize company names
+npm run scrape -- normalize -n "acme corporation, llc"
+
+# Batch process from CSV
+npm run scrape -- batch -i companies.csv -o ./results
+```
+
+See [CLI_USAGE.md](./CLI_USAGE.md) for detailed documentation.
+
+## Features
+
+### Core Capabilities
+- **Prospect Dashboard**: Displays prioritized list of UCC default prospects with scores, growth signals, and health grades
+- **Data Enrichment Pipeline**: Multi-tier data acquisition from free and commercial sources (see [ENRICHMENT_PIPELINE.md](./ENRICHMENT_PIPELINE.md))
+- **Health Scoring**: Real-time business health monitoring with sentiment analysis and violation tracking
+- **Growth Signal Detection**: Automated detection of hiring, permits, contracts, expansion, and equipment signals
+- **Competitor Intelligence**: Market analysis of UCC filing activity by secured parties
+- **Portfolio Monitoring**: Track funded companies with health alerts and risk indicators
+- **Lead Re-qualification Engine**: Resurrect "dead" leads by detecting new growth/risk signals
+- **AI Agent Orchestration**: Multi-agent system for intelligent automation, continuous improvement recommendations, and adaptive decision-making
+
+### Data Enrichment
+
+The platform includes a comprehensive data enrichment pipeline with:
+
+- **5 Specialized Agents**: DataAcquisition, Scraper, DataNormalization, Monitoring, EnrichmentOrchestrator
+- **Tiered Access**: Free, Starter, Professional, and Enterprise subscription tiers
+- **Multiple Data Sources**:
+  - Free: SEC EDGAR, OSHA, USPTO, Census, SAM.gov
+  - Starter: D&B, Google Places, Clearbit
+  - Professional: Experian, ZoomInfo, NewsAPI (structure ready)
+- **UCC Scraping**: State-specific scrapers for CA, TX, FL with real Puppeteer implementation
+- **CLI Tool**: Standalone terminal scraper for individual use (see [CLI_USAGE.md](./CLI_USAGE.md))
+- **Usage Tracking**: Quota management and cost tracking
+- **Rate Limiting**: Token bucket algorithm for API protection
+
+See [ENRICHMENT_PIPELINE.md](./ENRICHMENT_PIPELINE.md) for detailed documentation.
+
+### Data Export
 
 ## 🚀 Quick Start
 
@@ -217,6 +322,19 @@ Comprehensive test suite with 370+ tests covering:
 - [Branch Review Summary](docs/reports/BRANCH_REVIEW_SUMMARY.md)
 - [Mega Consolidation Summary](docs/reports/MEGA_CONSOLIDATION_SUMMARY.md)
 - [Final Cleanup Report](docs/reports/FINAL_CLEANUP_REPORT.md)
+
+### Core Documentation
+- **Product Requirements**: See [PRD.md](./PRD.md) for detailed feature specifications
+- **Logic Analysis**: See [LOGIC_ANALYSIS.md](./LOGIC_ANALYSIS.md) for implementation details
+- **Security**: See [SECURITY.md](./SECURITY.md) for security policies
+- **Competitive Analysis**: See [COMPETITIVE_ANALYSIS.md](./COMPETITIVE_ANALYSIS.md) for market research and improvement roadmap
+- **Agentic Forces**: See [AGENTIC_FORCES.md](./AGENTIC_FORCES.md) for AI agent orchestration system documentation
+- **Implementation Summary**: See [IMPLEMENTATION_SUMMARY.md](./IMPLEMENTATION_SUMMARY.md) for implementation details
+
+### Repository Management
+- **Branch Resolution**: See [BRANCH_RESOLUTION.md](./BRANCH_RESOLUTION.md) for branch cleanup strategy
+- **Maintenance Guide**: See [MAINTENANCE_GUIDE.md](./MAINTENANCE_GUIDE.md) for post-merge maintenance actions
+- **PR Comments Resolution**: See [PR_COMMENTS_RESOLUTION.md](./PR_COMMENTS_RESOLUTION.md) for tracking open-ended comments and action items
 
 ## 🔒 Security
 
