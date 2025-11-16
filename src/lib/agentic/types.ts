@@ -5,12 +5,15 @@
  * autonomous decision-making, continuous improvement, and self-directed actions.
  */
 
-export type AgentRole = 
+export type AgentRole =
   | 'data-analyzer'
-  | 'optimizer' 
+  | 'optimizer'
   | 'security'
   | 'ux-enhancer'
   | 'quality-assurance'
+  | 'competitor-agent'
+  | 'state-collector'
+  | 'entry-point-collector'
 
 export type ImprovementCategory =
   | 'performance'
@@ -18,6 +21,10 @@ export type ImprovementCategory =
   | 'usability'
   | 'data-quality'
   | 'feature-enhancement'
+  | 'competitor-analysis'
+  | 'threat-analysis'
+  | 'opportunity-analysis'
+  | 'strategic-recommendation'
 
 export type ImprovementPriority = 'critical' | 'high' | 'medium' | 'low'
 

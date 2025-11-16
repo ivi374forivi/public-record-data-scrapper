@@ -187,9 +187,16 @@ function App() {
       const filterInfo = searchQuery || industryFilter !== 'all' || stateFilter !== 'all' || minScore > 0
         ? 'filtered'
         : undefined
-      
+
+      if (!exportFormat) {
+        toast.error('Export failed', {
+          description: 'No export format specified'
+        })
+        return
+      }
+
       exportProspects(prospectsToExport, exportFormat, filterInfo)
-      
+
       const formatLabel = exportFormat.toUpperCase()
       toast.success(`Prospect(s) exported as ${formatLabel}`, {
         description: `${prospectsToExport.length} lead(s) exported successfully.`
