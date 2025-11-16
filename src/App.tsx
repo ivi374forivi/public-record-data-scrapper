@@ -34,12 +34,22 @@ import {
   Heart, 
   ArrowClockwise,
   MagnifyingGlass,
-  Robot
+  Robot,
+  ChartLineUp
 } from '@phosphor-icons/react'
 import { toast } from 'sonner'
 import { AgenticDashboard } from '@/components/AgenticDashboard'
+import { AnalyticsDashboard } from '@/components/AnalyticsDashboard'
 import { useAgenticEngine } from '@/hooks/use-agentic-engine'
 import { SystemContext, PerformanceMetrics, UserAction } from '@/lib/agentic/types'
+import { ThemeToggle } from '@/components/ThemeToggle'
+import type { ProspectNote, FollowUpReminder, OutreachEmail } from '@/lib/types'
+
+// Simple UUID generator using crypto API
+function generateId(): string {
+  return crypto.randomUUID ? crypto.randomUUID() : 
+    `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`
+}
 
 function App() {
   const [prospects, setProspects, deleteProspects] = useKV<Prospect[]>('ucc-prospects', [])
@@ -59,6 +69,9 @@ function App() {
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc')
   const [exportFormat, setExportFormat] = useKV<ExportFormat>('export-format', 'json')
   const [userActions, setUserActions] = useKV<UserAction[]>('user-actions', [])
+  const [notes, setNotes] = useKV<ProspectNote[]>('prospect-notes', [])
+  const [reminders, setReminders] = useKV<FollowUpReminder[]>('prospect-reminders', [])
+  const [outreachEmails, setOutreachEmails] = useKV<OutreachEmail[]>('outreach-emails', [])
 
   // Agentic Engine Integration
   const systemContext: SystemContext = useMemo(() => ({
@@ -242,6 +255,65 @@ function App() {
     })
   }
 
+  const handleAddNote = (note: Omit<ProspectNote, 'id' | 'createdAt' | 'createdBy'>) => {
+    const newNote: ProspectNote = {
+      ...note,
+      id: generateId(),
+      createdBy: 'Current User',
+      createdAt: new Date().toISOString()
+    }
+    
+    setNotes((current) => [...(current || []), newNote])
+  }
+
+  const handleDeleteNote = (noteId: string) => {
+    setNotes((current) => (current || []).filter(n => n.id !== noteId))
+  }
+
+  const handleAddReminder = (reminder: Omit<FollowUpReminder, 'id' | 'createdAt' | 'createdBy' | 'completed'>) => {
+    const newReminder: FollowUpReminder = {
+      ...reminder,
+      id: generateId(),
+      createdBy: 'Current User',
+      createdAt: new Date().toISOString(),
+      completed: false
+    }
+    
+    setReminders((current) => [...(current || []), newReminder])
+  }
+
+  const handleCompleteReminder = (reminderId: string) => {
+    setReminders((current) => {
+      if (!current) return []
+      return current.map(r => {
+        if (r.id === reminderId) {
+          return {
+            ...r,
+            completed: !r.completed,
+            completedAt: !r.completed ? new Date().toISOString() : undefined
+          }
+        }
+        return r
+      })
+    })
+  }
+
+  const handleDeleteReminder = (reminderId: string) => {
+    setReminders((current) => (current || []).filter(r => r.id !== reminderId))
+  }
+
+  const handleSendEmail = (email: Omit<OutreachEmail, 'id' | 'createdAt' | 'createdBy'>) => {
+    const newEmail: OutreachEmail = {
+      ...email,
+      id: generateId(),
+      createdBy: 'Current User',
+      createdAt: new Date().toISOString()
+    }
+    
+    setOutreachEmails((current) => [...(current || []), newEmail])
+    trackAction('send-email', { prospectId: email.prospectId, templateId: email.templateId })
+  }
+
   const filteredAndSortedProspects = useMemo(() => {
     const filtered = (prospects || []).filter(p => {
       const matchesSearch = p.companyName.toLowerCase().includes(searchQuery.toLowerCase())
@@ -334,15 +406,18 @@ function App() {
                 Automated merchant cash advance opportunity discovery
               </p>
             </div>
-            <Button 
-              variant="outline" 
-              onClick={handleRefreshData}
-              size="sm"
-              className="glass-effect border-white/30 text-white hover:bg-white/10 flex-shrink-0"
-            >
-              <ArrowClockwise size={16} weight="bold" className="sm:mr-2" />
-              <span className="hidden sm:inline">Refresh Data</span>
-            </Button>
+            <div className="flex gap-2 flex-shrink-0">
+              <ThemeToggle />
+              <Button 
+                variant="outline" 
+                onClick={handleRefreshData}
+                size="sm"
+                className="glass-effect border-white/30 text-white hover:bg-white/10"
+              >
+                <ArrowClockwise size={16} weight="bold" className="sm:mr-2" />
+                <span className="hidden sm:inline">Refresh Data</span>
+              </Button>
+            </div>
           </div>
         </div>
       </header>
@@ -359,7 +434,7 @@ function App() {
           )}
 
           <Tabs defaultValue="prospects" className="w-full">
-            <TabsList className="glass-effect grid w-full grid-cols-3 sm:grid-cols-5 mb-4 sm:mb-6 gap-1 sm:gap-0 h-auto sm:h-10 p-1">
+            <TabsList className="glass-effect grid w-full grid-cols-3 sm:grid-cols-6 mb-4 sm:mb-6 gap-1 sm:gap-0 h-auto sm:h-10 p-1">
               <TabsTrigger value="prospects" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm px-2 py-2 sm:py-0">
                 <Target size={16} weight="fill" className="sm:w-[18px] sm:h-[18px]" />
                 <span className="hidden xs:inline">Prospects</span>
@@ -371,6 +446,10 @@ function App() {
               <TabsTrigger value="intelligence" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm px-2 py-2 sm:py-0">
                 <ChartBar size={16} weight="fill" className="sm:w-[18px] sm:h-[18px]" />
                 <span className="hidden xs:inline">Intelligence</span>
+              </TabsTrigger>
+              <TabsTrigger value="analytics" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm px-2 py-2 sm:py-0">
+                <ChartLineUp size={16} weight="fill" className="sm:w-[18px] sm:h-[18px]" />
+                <span className="hidden xs:inline">Analytics</span>
               </TabsTrigger>
               <TabsTrigger value="requalification" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm px-2 py-2 sm:py-0">
                 <ArrowClockwise size={16} weight="fill" className="sm:w-[18px] sm:h-[18px]" />
@@ -529,6 +608,13 @@ function App() {
               </div>
             </TabsContent>
 
+            <TabsContent value="analytics" className="space-y-4 sm:space-y-6">
+              <AnalyticsDashboard 
+                prospects={prospects || []}
+                portfolio={portfolio || []}
+              />
+            </TabsContent>
+
             <TabsContent value="requalification" className="space-y-4 sm:space-y-6">
               <div className="text-center py-8 sm:py-12 glass-effect rounded-lg p-6 sm:p-8">
                 <ArrowClockwise size={40} weight="fill" className="mx-auto mb-4 text-white/70 sm:w-12 sm:h-12" />
@@ -556,6 +642,14 @@ function App() {
         onClaim={handleClaimLead}
         onUnclaim={handleUnclaimLead}
         onExport={handleExportProspect}
+        notes={notes || []}
+        reminders={reminders || []}
+        onAddNote={handleAddNote}
+        onDeleteNote={handleDeleteNote}
+        onAddReminder={handleAddReminder}
+        onCompleteReminder={handleCompleteReminder}
+        onDeleteReminder={handleDeleteReminder}
+        onSendEmail={handleSendEmail}
       />
     </div>
   )

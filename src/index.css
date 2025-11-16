@@ -17,6 +17,17 @@
     );
     background-attachment: fixed;
     min-height: 100vh;
+    transition: background 0.3s ease;
+  }
+
+  .dark body {
+    background: linear-gradient(135deg, 
+      oklch(0.12 0.03 250) 0%, 
+      oklch(0.10 0.02 240) 25%,
+      oklch(0.08 0.02 230) 50%,
+      oklch(0.10 0.03 245) 75%,
+      oklch(0.12 0.03 250) 100%
+    );
   }
   
   .font-mono {
@@ -127,6 +138,12 @@
   backdrop-filter: blur(20px) saturate(180%);
   -webkit-backdrop-filter: blur(20px) saturate(180%);
   border: 1px solid oklch(1 0 0 / 0.15);
+  transition: background 0.3s ease, border-color 0.3s ease;
+}
+
+.dark .glass-effect {
+  background: oklch(0.15 0.02 250 / 0.65);
+  border: 1px solid oklch(1 0 0 / 0.1);
 }
 
 .mica-effect {
@@ -137,6 +154,15 @@
   backdrop-filter: blur(40px) saturate(150%);
   -webkit-backdrop-filter: blur(40px) saturate(150%);
   border: 1px solid oklch(1 0 0 / 0.2);
+  transition: background 0.3s ease, border-color 0.3s ease;
+}
+
+.dark .mica-effect {
+  background: linear-gradient(135deg, 
+    oklch(0.18 0.02 250 / 0.7) 0%,
+    oklch(0.15 0.02 240 / 0.6) 100%
+  );
+  border: 1px solid oklch(1 0 0 / 0.1);
 }
 
 @keyframes ticker-slide {
