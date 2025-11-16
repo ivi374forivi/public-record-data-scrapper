@@ -271,7 +271,7 @@ Keep response under 200 words unless more detail is clearly needed.`;
       'Show me prospects in construction industry',
       'Which competitors are most active this month?',
       'Find prospects with hiring signals',
-      'What's my conversion rate this quarter?',
+      'What\'s my conversion rate this quarter?',
       'Generate an executive summary report',
     ];
 
