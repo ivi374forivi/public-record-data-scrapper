@@ -7,13 +7,13 @@
   }
   
   body {
-    font-family: 'IBM Plex Sans', var(--font-sans), ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans', sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+    font-family: var(--font-sans), ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans', sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
     background: linear-gradient(135deg, 
-      oklch(0.25 0.06 250) 0%, 
-      oklch(0.22 0.05 245) 25%,
-      oklch(0.20 0.05 240) 50%,
-      oklch(0.23 0.055 248) 75%,
-      oklch(0.25 0.06 250) 100%
+      oklch(0.25 0.08 250) 0%, 
+      oklch(0.20 0.06 240) 25%,
+      oklch(0.18 0.05 230) 50%,
+      oklch(0.22 0.07 245) 75%,
+      oklch(0.25 0.08 250) 100%
     );
     background-attachment: fixed;
     min-height: 100vh;
@@ -22,95 +22,71 @@
   .font-mono {
     font-family: 'IBM Plex Mono', 'SF Mono', Monaco, 'Cascadia Code', monospace;
   }
-  
-  h1, h2, h3 {
-    font-family: 'IBM Plex Sans', sans-serif;
-    letter-spacing: -0.02em;
-  }
-  
-  h1 {
-    font-weight: 600;
-    font-size: 2rem;
-    line-height: 1.2;
-  }
-  
-  h2 {
-    font-weight: 500;
-    font-size: 1.25rem;
-    line-height: 1.3;
-    letter-spacing: -0.01em;
-  }
-  
-  h3 {
-    font-weight: 500;
-    font-size: 0.875rem;
-    line-height: 1.4;
-    letter-spacing: 0;
-  }
 }
 
 :root {
-  --background: oklch(0.98 0.01 90);
-  --foreground: oklch(0.20 0.05 250);
+  --background: oklch(0.98 0.01 180);
+  --foreground: oklch(0.15 0.02 240);
 
-  --card: oklch(1.00 0 0 / 0.70);
-  --card-foreground: oklch(0.20 0.05 250);
+  --card: oklch(0.99 0.005 180);
+  --card-foreground: oklch(0.15 0.02 240);
   
-  --popover: oklch(1.00 0 0 / 0.95);
-  --popover-foreground: oklch(0.20 0.05 250);
+  --popover: oklch(1.00 0 0);
+  --popover-foreground: oklch(0.15 0.02 240);
 
-  --primary: oklch(0.25 0.06 250);
-  --primary-foreground: oklch(1 0 0);
+  --primary: oklch(0.65 0.20 160);
+  --primary-foreground: oklch(0.98 0.01 180);
 
-  --secondary: oklch(0.65 0.14 210);
-  --secondary-foreground: oklch(0.20 0.05 250);
+  --secondary: oklch(0.92 0.08 200);
+  --secondary-foreground: oklch(0.20 0.05 240);
 
-  --muted: oklch(0.92 0.01 90);
-  --muted-foreground: oklch(0.50 0.02 270);
+  --muted: oklch(0.94 0.02 180);
+  --muted-foreground: oklch(0.45 0.02 240);
 
-  --accent: oklch(0.70 0.15 60);
-  --accent-foreground: oklch(0.20 0.05 250);
+  --accent: oklch(0.75 0.15 280);
+  --accent-foreground: oklch(0.15 0.02 240);
 
-  --destructive: oklch(0.55 0.35 15);
-  --destructive-foreground: oklch(0.98 0.002 0);
+  --destructive: oklch(0.65 0.20 25);
+  --destructive-foreground: oklch(0.98 0.01 180);
 
-  --border: oklch(1 0 0 / 0.20);
-  --input: oklch(1 0 0 / 0.20);
-  --ring: oklch(0.70 0.15 60);
+  --border: oklch(0.88 0.02 180);
+  --input: oklch(0.88 0.02 180);
+  --ring: oklch(0.65 0.20 160);
 
   --success: oklch(0.60 0.15 145);
   --success-foreground: oklch(1 0 0);
 
-  --warning: oklch(0.70 0.15 60);
+  --warning: oklch(0.75 0.15 75);
   --warning-foreground: oklch(0.20 0.05 250);
 
   --radius: 0.75rem;
 
-  --chart-1: oklch(0.70 0.15 60);
-  --chart-2: oklch(0.65 0.14 210);
-  --chart-3: oklch(0.25 0.06 250);
-  --chart-4: oklch(0.55 0.12 200);
-  --chart-5: oklch(0.45 0.10 280);
+  --chart-1: oklch(0.65 0.20 160);
+  --chart-2: oklch(0.75 0.15 280);
+  --chart-3: oklch(0.55 0.18 120);
+  --chart-4: oklch(0.70 0.12 320);
+  --chart-5: oklch(0.60 0.15 40);
 
-  --sidebar: oklch(0.98 0.01 90);
-  --sidebar-foreground: oklch(0.20 0.05 250);
-  --sidebar-primary: oklch(0.25 0.06 250);
-  --sidebar-primary-foreground: oklch(1 0 0);
-  --sidebar-accent: oklch(0.70 0.15 60);
-  --sidebar-accent-foreground: oklch(0.20 0.05 250);
-  --sidebar-border: oklch(1 0 0 / 0.20);
-  --sidebar-ring: oklch(0.70 0.15 60);
+  --sidebar: oklch(0.96 0.01 180);
+  --sidebar-foreground: oklch(0.15 0.02 240);
+  --sidebar-primary: oklch(0.65 0.20 160);
+  --sidebar-primary-foreground: oklch(0.98 0.01 180);
+  --sidebar-accent: oklch(0.92 0.08 200);
+  --sidebar-accent-foreground: oklch(0.20 0.05 240);
+  --sidebar-border: oklch(0.88 0.02 180);
+  --sidebar-ring: oklch(0.65 0.20 160);
 
-  --shadow-color: oklch(0.20 0.05 250);
-  --shadow-opacity: 0.1;
-  --shadow-blur: 20px;
+  --shadow-color: oklch(0.65 0.20 160);
+  --shadow-opacity: 0.15;
+  --shadow-blur: 8px;
   --shadow-spread: 0px;
   --shadow-offset-x: 0px;
   --shadow-offset-y: 4px;
 
-  --font-sans: 'IBM Plex Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  --font-mono: 'IBM Plex Mono', 'SF Mono', Monaco, monospace;
-  --spacing: 0.25rem;
+  --font-sans: Inter;
+  --font-serif: Lora;
+  --font-mono: Source Code Pro;
+  --spacing: 0.20rem;
 }
 
 @theme {
@@ -147,24 +123,20 @@
 }
 
 .glass-effect {
-  background: oklch(1 0 0 / 0.70);
+  background: oklch(1 0 0 / 0.65);
   backdrop-filter: blur(20px) saturate(180%);
   -webkit-backdrop-filter: blur(20px) saturate(180%);
-  border: 1px solid oklch(1 0 0 / 0.20);
-  box-shadow: 0 4px 20px oklch(0.20 0.05 250 / 0.1),
-              0 0 1px oklch(1 0 0 / 0.25) inset;
+  border: 1px solid oklch(1 0 0 / 0.15);
 }
 
 .mica-effect {
   background: linear-gradient(135deg, 
-    oklch(1 0 0 / 0.75) 0%,
-    oklch(0.98 0.01 250 / 0.65) 100%
+    oklch(1 0 0 / 0.7) 0%,
+    oklch(0.98 0.01 250 / 0.6) 100%
   );
   backdrop-filter: blur(40px) saturate(150%);
   -webkit-backdrop-filter: blur(40px) saturate(150%);
-  border: 1px solid oklch(1 0 0 / 0.25);
-  box-shadow: 0 8px 32px oklch(0.20 0.05 250 / 0.12),
-              0 0 1px oklch(1 0 0 / 0.3) inset;
+  border: 1px solid oklch(1 0 0 / 0.2);
 }
 
 @keyframes ticker-slide {

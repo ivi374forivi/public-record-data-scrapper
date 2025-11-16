@@ -4,7 +4,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Checkbox } from '@/components/ui/checkbox'
-import { 
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -20,27 +20,35 @@ import { AdvancedFilters, AdvancedFilterState, initialFilters } from '@/componen
 import { StaleDataWarning } from '@/components/StaleDataWarning'
 import { BatchOperations } from '@/components/BatchOperations'
 import { SortControls, SortField, SortDirection } from '@/components/SortControls'
-import { 
-  generateProspects, 
-  generateCompetitorData, 
+import {
+  generateProspects,
+  generateCompetitorData,
   generatePortfolioCompanies,
   generateDashboardStats
 } from '@/lib/mockData'
 import { Prospect, CompetitorData, PortfolioCompany, IndustryType } from '@/lib/types'
-import { 
-  Target, 
-  ChartBar, 
-  Heart, 
+import { exportProspects, ExportFormat } from '@/lib/exportUtils'
+import {
+  Target,
+  ChartBar,
+  Heart,
   ArrowClockwise,
-  MagnifyingGlass
+  MagnifyingGlass,
+  Robot,
+  Database
 } from '@phosphor-icons/react'
 import { toast } from 'sonner'
+import { AgenticDashboard } from '@/components/AgenticDashboard'
+import { useAgenticEngine } from '@/hooks/use-agentic-engine'
+import { SystemContext, PerformanceMetrics, UserAction } from '@/lib/agentic/types'
+import { useDataPipeline } from '@/hooks/use-data-pipeline'
+import { featureFlags } from '@/lib/config/dataPipeline'
 
 function App() {
   const [prospects, setProspects, deleteProspects] = useKV<Prospect[]>('ucc-prospects', [])
   const [competitors, setCompetitors] = useKV<CompetitorData[]>('competitor-data', [])
   const [portfolio, setPortfolio] = useKV<PortfolioCompany[]>('portfolio-companies', [])
-  
+
   const [selectedProspect, setSelectedProspect] = useState<Prospect | null>(null)
   const [dialogOpen, setDialogOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
@@ -52,6 +60,40 @@ function App() {
   const [lastDataRefresh, setLastDataRefresh] = useKV<string>('last-data-refresh', new Date().toISOString())
   const [sortField, setSortField] = useState<SortField>('priorityScore')
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc')
+  const [exportFormat, setExportFormat] = useKV<ExportFormat>('export-format', 'json')
+  const [userActions, setUserActions] = useKV<UserAction[]>('user-actions', [])
+
+  // Data Pipeline Integration
+  const dataPipeline = useDataPipeline()
+
+  // Sync pipeline data to KV store when it updates
+  useEffect(() => {
+    if (dataPipeline.prospects.length > 0 && !featureFlags.useMockData) {
+      setProspects(dataPipeline.prospects)
+      setLastDataRefresh(dataPipeline.lastUpdate || new Date().toISOString())
+    }
+  }, [dataPipeline.prospects, dataPipeline.lastUpdate, setProspects, setLastDataRefresh])
+
+  // Agentic Engine Integration
+  const systemContext: SystemContext = useMemo(() => ({
+    prospects: prospects || [],
+    competitors: competitors || [],
+    portfolio: portfolio || [],
+    userActions: userActions || [],
+    performanceMetrics: {
+      avgResponseTime: 450,
+      errorRate: 0.02,
+      userSatisfactionScore: 7.5,
+      dataFreshnessScore: 85
+    } as PerformanceMetrics,
+    timestamp: new Date().toISOString()
+  }), [prospects, competitors, portfolio, userActions])
+
+  const agentic = useAgenticEngine(systemContext, {
+    enabled: true,
+    autonomousExecutionEnabled: false, // Disabled by default for safety
+    safetyThreshold: 80
+  })
 
   useEffect(() => {
     if (!prospects || prospects.length === 0) {
@@ -70,27 +112,60 @@ function App() {
 
   const stats = generateDashboardStats(prospects || [], portfolio || [])
   
-  const handleRefreshData = () => {
-    const now = new Date().toISOString()
-    setProspects((current) => {
-      if (!current || current.length === 0) return []
-      return current.map(p => ({
-        ...p,
-        healthScore: {
-          ...p.healthScore,
-          lastUpdated: now.split('T')[0]
-        }
-      }))
+  // Track user actions for agentic analysis
+  const trackAction = (type: string, details: Record<string, any> = {}) => {
+    setUserActions((current) => {
+      const newAction: UserAction = {
+        type,
+        timestamp: new Date().toISOString(),
+        details
+      }
+      return [...(current || []), newAction].slice(-100) // Keep last 100 actions
     })
-    setLastDataRefresh(now)
-    toast.success('Data refreshed', {
-      description: 'All health scores and signals have been updated.'
-    })
+  }
+
+  const handleRefreshData = async () => {
+    trackAction('refresh-data')
+
+    if (!featureFlags.useMockData && dataPipeline.refresh) {
+      // Use data pipeline refresh
+      toast.loading('Refreshing data from pipeline...', { id: 'refresh' })
+      try {
+        await dataPipeline.refresh()
+        toast.success('Data refreshed', {
+          id: 'refresh',
+          description: 'All data has been updated from the pipeline.'
+        })
+      } catch (error) {
+        toast.error('Refresh failed', {
+          id: 'refresh',
+          description: error instanceof Error ? error.message : 'Failed to refresh data'
+        })
+      }
+    } else {
+      // Use mock data refresh (update timestamps)
+      const now = new Date().toISOString()
+      setProspects((current) => {
+        if (!current || current.length === 0) return []
+        return current.map(p => ({
+          ...p,
+          healthScore: {
+            ...p.healthScore,
+            lastUpdated: now.split('T')[0]
+          }
+        }))
+      })
+      setLastDataRefresh(now)
+      toast.success('Data refreshed', {
+        description: 'All health scores and signals have been updated.'
+      })
+    }
   }
 
   const handleProspectSelect = (prospect: Prospect) => {
     setSelectedProspect(prospect)
     setDialogOpen(true)
+    trackAction('prospect-select', { prospectId: prospect.id })
   }
 
   const handleClaimLead = (prospect: Prospect) => {
@@ -111,6 +186,7 @@ function App() {
     })
     setSelectedProspect(null)
     setDialogOpen(false)
+    trackAction('claim', { prospectId: prospect.id })
     toast.success('Lead claimed successfully', {
       description: `${prospect.companyName} has been added to your pipeline.`
     })
@@ -136,37 +212,26 @@ function App() {
   }
 
   const handleExportProspect = (prospect: Prospect) => {
-    exportProspects([prospect])
+    handleExportProspects([prospect])
   }
 
-  const exportProspects = (prospectsToExport: Prospect[]) => {
-    const exportData = prospectsToExport.map(prospect => ({
-      company: prospect.companyName,
-      industry: prospect.industry,
-      state: prospect.state,
-      priorityScore: prospect.priorityScore,
-      healthGrade: prospect.healthScore.grade,
-      growthSignals: prospect.growthSignals.length,
-      estimatedRevenue: prospect.estimatedRevenue,
-      narrative: prospect.narrative,
-      status: prospect.status
-    }))
-    
-    const jsonStr = JSON.stringify(exportData, null, 2)
-    const blob = new Blob([jsonStr], { type: 'application/json' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    const filename = prospectsToExport.length === 1
-      ? `prospect-${prospectsToExport[0].companyName.replace(/\s+/g, '-').toLowerCase()}-${Date.now()}.json`
-      : `prospects-batch-${Date.now()}.json`
-    a.download = filename
-    a.click()
-    URL.revokeObjectURL(url)
-    
-    toast.success('Prospect(s) exported', {
-      description: `${prospectsToExport.length} lead(s) exported successfully.`
-    })
+  const handleExportProspects = (prospectsToExport: Prospect[]) => {
+    try {
+      const filterInfo = searchQuery || industryFilter !== 'all' || stateFilter !== 'all' || minScore > 0
+        ? 'filtered'
+        : undefined
+      
+      exportProspects(prospectsToExport, exportFormat, filterInfo)
+      
+      const formatLabel = exportFormat.toUpperCase()
+      toast.success(`Prospect(s) exported as ${formatLabel}`, {
+        description: `${prospectsToExport.length} lead(s) exported successfully.`
+      })
+    } catch (error) {
+      toast.error('Export failed', {
+        description: error instanceof Error ? error.message : 'Unknown error occurred'
+      })
+    }
   }
 
   const handleBatchClaim = (ids: string[]) => {
@@ -189,7 +254,7 @@ function App() {
 
   const handleBatchExport = (ids: string[]) => {
     const prospectsToExport = (prospects || []).filter(p => ids.includes(p.id))
-    exportProspects(prospectsToExport)
+    handleExportProspects(prospectsToExport)
   }
 
   const handleBatchDelete = (ids: string[]) => {
@@ -285,23 +350,23 @@ function App() {
   return (
     <div className="min-h-screen">
       <header className="mica-effect border-b border-white/20 sticky top-0 z-50 shadow-lg">
-        <div className="container mx-auto px-3 sm:px-4 md:px-6 py-4 sm:py-5">
+        <div className="container mx-auto px-3 sm:px-4 md:px-6 py-3 sm:py-4">
           <div className="flex items-center justify-between gap-2 sm:gap-4">
             <div className="min-w-0 flex-1">
-              <h1 className="text-xl sm:text-2xl md:text-3xl font-semibold text-white truncate" style={{ letterSpacing: '-0.02em' }}>
+              <h1 className="text-base sm:text-xl md:text-2xl font-semibold tracking-tight text-white truncate">
                 UCC-MCA Intelligence Platform
               </h1>
-              <p className="text-sm sm:text-base text-white/80 hidden sm:block mt-1">
+              <p className="text-xs sm:text-sm text-white/70 hidden sm:block">
                 Automated merchant cash advance opportunity discovery
               </p>
             </div>
             <Button 
               variant="outline" 
               onClick={handleRefreshData}
-              size="default"
-              className="glass-effect border-white/30 text-white hover:bg-white/10 hover:border-white/40 flex-shrink-0 h-10 sm:h-11"
+              size="sm"
+              className="glass-effect border-white/30 text-white hover:bg-white/10 flex-shrink-0"
             >
-              <ArrowClockwise size={18} weight="bold" className="sm:mr-2" />
+              <ArrowClockwise size={16} weight="bold" className="sm:mr-2" />
               <span className="hidden sm:inline">Refresh Data</span>
             </Button>
           </div>
@@ -320,42 +385,46 @@ function App() {
           )}
 
           <Tabs defaultValue="prospects" className="w-full">
-            <TabsList className="glass-effect grid w-full grid-cols-2 sm:grid-cols-4 mb-6 gap-1 sm:gap-0 h-auto sm:h-12 p-1.5 shadow-md">
-              <TabsTrigger value="prospects" className="flex items-center gap-1.5 sm:gap-2 text-sm sm:text-base px-3 py-2.5 sm:py-0 font-medium data-[state=active]:bg-primary/20 data-[state=active]:text-white">
-                <Target size={18} weight="fill" className="sm:w-5 sm:h-5" />
+            <TabsList className="glass-effect grid w-full grid-cols-3 sm:grid-cols-5 mb-4 sm:mb-6 gap-1 sm:gap-0 h-auto sm:h-10 p-1">
+              <TabsTrigger value="prospects" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm px-2 py-2 sm:py-0">
+                <Target size={16} weight="fill" className="sm:w-[18px] sm:h-[18px]" />
                 <span className="hidden xs:inline">Prospects</span>
               </TabsTrigger>
-              <TabsTrigger value="portfolio" className="flex items-center gap-1.5 sm:gap-2 text-sm sm:text-base px-3 py-2.5 sm:py-0 font-medium data-[state=active]:bg-primary/20 data-[state=active]:text-white">
-                <Heart size={18} weight="fill" className="sm:w-5 sm:h-5" />
+              <TabsTrigger value="portfolio" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm px-2 py-2 sm:py-0">
+                <Heart size={16} weight="fill" className="sm:w-[18px] sm:h-[18px]" />
                 <span className="hidden xs:inline">Portfolio</span>
               </TabsTrigger>
-              <TabsTrigger value="intelligence" className="flex items-center gap-1.5 sm:gap-2 text-sm sm:text-base px-3 py-2.5 sm:py-0 font-medium data-[state=active]:bg-primary/20 data-[state=active]:text-white">
-                <ChartBar size={18} weight="fill" className="sm:w-5 sm:h-5" />
+              <TabsTrigger value="intelligence" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm px-2 py-2 sm:py-0">
+                <ChartBar size={16} weight="fill" className="sm:w-[18px] sm:h-[18px]" />
                 <span className="hidden xs:inline">Intelligence</span>
               </TabsTrigger>
-              <TabsTrigger value="requalification" className="flex items-center gap-1.5 sm:gap-2 text-sm sm:text-base px-3 py-2.5 sm:py-0 font-medium data-[state=active]:bg-primary/20 data-[state=active]:text-white">
-                <ArrowClockwise size={18} weight="fill" className="sm:w-5 sm:h-5" />
+              <TabsTrigger value="requalification" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm px-2 py-2 sm:py-0">
+                <ArrowClockwise size={16} weight="fill" className="sm:w-[18px] sm:h-[18px]" />
                 <span className="hidden xs:inline">Re-qual</span>
+              </TabsTrigger>
+              <TabsTrigger value="agentic" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm px-2 py-2 sm:py-0">
+                <Robot size={16} weight="fill" className="sm:w-[18px] sm:h-[18px]" />
+                <span className="hidden xs:inline">Agentic</span>
               </TabsTrigger>
             </TabsList>
 
             <TabsContent value="prospects" className="space-y-4 sm:space-y-6">
-              <div className="flex flex-col gap-4 sm:gap-4">
+              <div className="flex flex-col gap-3 sm:gap-4">
                 <div className="relative flex-1">
                   <MagnifyingGlass 
-                    size={20} 
-                    className="absolute left-3.5 top-1/2 -translate-y-1/2 text-white/70"
+                    size={18} 
+                    className="absolute left-3 top-1/2 -translate-y-1/2 text-white/70"
                   />
                   <Input
                     placeholder="Search companies..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="pl-11 glass-effect border-white/30 text-white placeholder:text-white/50 h-11 sm:h-12 text-base"
+                    className="pl-10 glass-effect border-white/30 text-white placeholder:text-white/50 h-10 sm:h-11"
                   />
                 </div>
-                <div className="flex gap-2 sm:gap-3 flex-wrap">
+                <div className="flex gap-2 flex-wrap">
                   <Select value={industryFilter} onValueChange={setIndustryFilter}>
-                    <SelectTrigger className="flex-1 min-w-[140px] sm:w-[180px] glass-effect border-white/30 text-white h-11 sm:h-12 text-sm">
+                    <SelectTrigger className="flex-1 min-w-[140px] sm:w-[180px] glass-effect border-white/30 text-white h-10 sm:h-11">
                       <SelectValue placeholder="Industry" />
                     </SelectTrigger>
                     <SelectContent className="glass-effect border-white/30">
@@ -368,7 +437,7 @@ function App() {
                     </SelectContent>
                   </Select>
                   <Select value={stateFilter} onValueChange={setStateFilter}>
-                    <SelectTrigger className="flex-1 min-w-[100px] sm:w-[140px] glass-effect border-white/30 text-white h-11 sm:h-12 text-sm">
+                    <SelectTrigger className="flex-1 min-w-[100px] sm:w-[140px] glass-effect border-white/30 text-white h-10 sm:h-11">
                       <SelectValue placeholder="State" />
                     </SelectTrigger>
                     <SelectContent className="glass-effect border-white/30">
@@ -381,7 +450,7 @@ function App() {
                     </SelectContent>
                   </Select>
                   <Select value={minScore.toString()} onValueChange={(val) => setMinScore(Number(val))}>
-                    <SelectTrigger className="flex-1 min-w-[120px] sm:w-[140px] glass-effect border-white/30 text-white h-11 sm:h-12 text-sm">
+                    <SelectTrigger className="flex-1 min-w-[120px] sm:w-[140px] glass-effect border-white/30 text-white h-10 sm:h-11">
                       <SelectValue placeholder="Min Score" />
                     </SelectTrigger>
                     <SelectContent className="glass-effect border-white/30">
@@ -389,6 +458,15 @@ function App() {
                       <SelectItem value="50">50+</SelectItem>
                       <SelectItem value="70">70+ (High)</SelectItem>
                       <SelectItem value="85">85+ (Elite)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Select value={exportFormat} onValueChange={(val) => setExportFormat(val as ExportFormat)}>
+                    <SelectTrigger className="flex-1 min-w-[110px] sm:w-[130px] glass-effect border-white/30 text-white h-10 sm:h-11">
+                      <SelectValue placeholder="Export Format" />
+                    </SelectTrigger>
+                    <SelectContent className="glass-effect border-white/30">
+                      <SelectItem value="json">Export: JSON</SelectItem>
+                      <SelectItem value="csv">Export: CSV</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -425,7 +503,7 @@ function App() {
                   onBatchDelete={handleBatchDelete}
                 />
 
-                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-5">
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3 sm:gap-4">
                   {filteredAndSortedProspects.map(prospect => {
                     const isSelected = selectedProspectIds.has(prospect.id)
                     return (
@@ -488,6 +566,10 @@ function App() {
                   Upload Lead List
                 </Button>
               </div>
+            </TabsContent>
+
+            <TabsContent value="agentic" className="space-y-4 sm:space-y-6">
+              <AgenticDashboard agentic={agentic} />
             </TabsContent>
           </Tabs>
         </div>
