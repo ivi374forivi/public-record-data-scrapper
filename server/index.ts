@@ -10,6 +10,9 @@ import { rateLimiter } from './middleware/rateLimiter'
 
 // Import routes
 import prospectsRouter from './routes/prospects'
+import competitorsRouter from './routes/competitors'
+import portfolioRouter from './routes/portfolio'
+import enrichmentRouter from './routes/enrichment'
 import healthRouter from './routes/health'
 
 export class Server {
@@ -47,6 +50,9 @@ export class Server {
   private setupRoutes(): void {
     // API routes
     this.app.use('/api/prospects', prospectsRouter)
+    this.app.use('/api/competitors', competitorsRouter)
+    this.app.use('/api/portfolio', portfolioRouter)
+    this.app.use('/api/enrichment', enrichmentRouter)
     this.app.use('/api/health', healthRouter)
 
     // Root endpoint
@@ -55,7 +61,14 @@ export class Server {
         name: 'UCC-MCA Intelligence API',
         version: '1.0.0',
         status: 'ok',
-        documentation: '/api/docs'
+        documentation: '/api/docs',
+        endpoints: {
+          prospects: '/api/prospects',
+          competitors: '/api/competitors',
+          portfolio: '/api/portfolio',
+          enrichment: '/api/enrichment',
+          health: '/api/health'
+        }
       })
     })
   }
