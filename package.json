@@ -17,6 +17,12 @@
         "postinstall": "node ./scripts/ensure-main-branch.mjs",
         "scrape": "tsx scripts/cli-scraper.ts",
         "scrape:ca": "tsx scripts/scrape-and-store.ts",
+        "scrape:multi": "tsx scripts/scrape-multi-state.ts",
+        "scrape:all": "tsx scripts/scrape-multi-state.ts CA TX FL NY IL",
+        "scrape:tx": "tsx scripts/scrape-multi-state.ts TX",
+        "scrape:fl": "tsx scripts/scrape-multi-state.ts FL",
+        "scrape:ny": "tsx scripts/scrape-multi-state.ts NY",
+        "scrape:il": "tsx scripts/scrape-multi-state.ts IL",
         "db:init": "tsx scripts/init-database.ts",
         "db:seed": "tsx scripts/seed-database.ts",
         "db:setup": "npm run db:init && npm run db:seed"

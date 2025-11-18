@@ -13,9 +13,13 @@ import { BaseScraper } from './base-scraper'
 import { CaliforniaUCCScraper } from './ca-ucc-scraper'
 import { CaliforniaUCCScraperPuppeteer } from './ca-ucc-scraper-puppeteer'
 import { CaliforniaUCCScraperAPI } from './ca-ucc-scraper-api'
+import { TexasUCCScraper } from './tx-ucc-scraper'
+import { FloridaUCCScraper } from './fl-ucc-scraper'
+import { NewYorkUCCScraper } from './ny-ucc-scraper'
+import { IllinoisUCCScraper } from './il-ucc-scraper'
 
 export type ScraperImplementation = 'mock' | 'puppeteer' | 'api'
-export type SupportedState = 'CA' // | 'TX' | 'FL' | 'NY' - add more states
+export type SupportedState = 'CA' | 'TX' | 'FL' | 'NY' | 'IL'
 
 export interface ScraperFactoryConfig {
   implementation?: ScraperImplementation
@@ -42,11 +46,17 @@ export class ScraperFactory {
       case 'CA':
         return this.createCAScraper(implementation, config)
 
-      // Add more states here as they're implemented:
-      // case 'TX':
-      //   return this.createTXScraper(implementation, config)
-      // case 'FL':
-      //   return this.createFLScraper(implementation, config)
+      case 'TX':
+        return this.createTXScraper(implementation, config)
+
+      case 'FL':
+        return this.createFLScraper(implementation, config)
+
+      case 'NY':
+        return this.createNYScraper(implementation, config)
+
+      case 'IL':
+        return this.createILScraper(implementation, config)
 
       default:
         throw new Error(`Scraper not implemented for state: ${state}`)
@@ -66,6 +76,106 @@ export class ScraperFactory {
 
       case 'puppeteer':
         return new CaliforniaUCCScraperPuppeteer()
+
+      case 'api':
+        return new CaliforniaUCCScraperAPI({
+          apiKey: config?.apiKey || process.env.UCC_API_KEY,
+          endpoint: config?.apiEndpoint || process.env.UCC_API_ENDPOINT
+        })
+
+      default:
+        throw new Error(`Unknown implementation: ${implementation}`)
+    }
+  }
+
+  /**
+   * Create Texas scraper
+   */
+  private static createTXScraper(
+    implementation: ScraperImplementation,
+    config?: ScraperFactoryConfig
+  ): BaseScraper {
+    switch (implementation) {
+      case 'mock':
+        return new TexasUCCScraper()
+
+      case 'puppeteer':
+        throw new Error('Puppeteer implementation not yet available for TX')
+
+      case 'api':
+        return new CaliforniaUCCScraperAPI({
+          apiKey: config?.apiKey || process.env.UCC_API_KEY,
+          endpoint: config?.apiEndpoint || process.env.UCC_API_ENDPOINT
+        })
+
+      default:
+        throw new Error(`Unknown implementation: ${implementation}`)
+    }
+  }
+
+  /**
+   * Create Florida scraper
+   */
+  private static createFLScraper(
+    implementation: ScraperImplementation,
+    config?: ScraperFactoryConfig
+  ): BaseScraper {
+    switch (implementation) {
+      case 'mock':
+        return new FloridaUCCScraper()
+
+      case 'puppeteer':
+        throw new Error('Puppeteer implementation not yet available for FL')
+
+      case 'api':
+        return new CaliforniaUCCScraperAPI({
+          apiKey: config?.apiKey || process.env.UCC_API_KEY,
+          endpoint: config?.apiEndpoint || process.env.UCC_API_ENDPOINT
+        })
+
+      default:
+        throw new Error(`Unknown implementation: ${implementation}`)
+    }
+  }
+
+  /**
+   * Create New York scraper
+   */
+  private static createNYScraper(
+    implementation: ScraperImplementation,
+    config?: ScraperFactoryConfig
+  ): BaseScraper {
+    switch (implementation) {
+      case 'mock':
+        return new NewYorkUCCScraper()
+
+      case 'puppeteer':
+        throw new Error('Puppeteer implementation not yet available for NY')
+
+      case 'api':
+        return new CaliforniaUCCScraperAPI({
+          apiKey: config?.apiKey || process.env.UCC_API_KEY,
+          endpoint: config?.apiEndpoint || process.env.UCC_API_ENDPOINT
+        })
+
+      default:
+        throw new Error(`Unknown implementation: ${implementation}`)
+    }
+  }
+
+  /**
+   * Create Illinois scraper
+   */
+  private static createILScraper(
+    implementation: ScraperImplementation,
+    config?: ScraperFactoryConfig
+  ): BaseScraper {
+    switch (implementation) {
+      case 'mock':
+        return new IllinoisUCCScraper()
+
+      case 'puppeteer':
+        throw new Error('Puppeteer implementation not yet available for IL')
 
       case 'api':
         return new CaliforniaUCCScraperAPI({
