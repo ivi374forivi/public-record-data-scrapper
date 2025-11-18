@@ -72,7 +72,7 @@ function App() {
   const [notes, setNotes] = useKV<ProspectNote[]>('prospect-notes', [])
   const [reminders, setReminders] = useKV<FollowUpReminder[]>('prospect-reminders', [])
   // Future: Email outreach tracking
-  // const [outreachEmails, setOutreachEmails] = useKV<OutreachEmail[]>('outreach-emails', [])
+  const [outreachEmails, setOutreachEmails] = useKV<OutreachEmail[]>('outreach-emails', [])
 
   // Agentic Engine Integration
   const systemContext: SystemContext = useMemo(() => ({

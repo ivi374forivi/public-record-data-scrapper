@@ -50,7 +50,11 @@ export function AgenticDashboard({ agentic, competitors }: AgenticDashboardProps
     'data-quality': <Brain className="w-4 h-4" />,
     'feature-enhancement': <CheckCircle className="w-4 h-4" />,
     'strategic': <Target className="w-4 h-4" />,
-    'competitor-intelligence': <Users className="w-4 h-4" />
+    'competitor-intelligence': <Users className="w-4 h-4" />,
+    'competitor-analysis': <Users className="w-4 h-4" />,
+    'threat-analysis': <Shield className="w-4 h-4" />,
+    'opportunity-analysis': <Target className="w-4 h-4" />,
+    'strategic-recommendation': <Target className="w-4 h-4" />
   }
 
   const pendingImprovements = improvements.filter(i => i.status === 'detected' || i.status === 'approved')
