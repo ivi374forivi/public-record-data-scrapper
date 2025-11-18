@@ -26,6 +26,7 @@
         "scheduler": "tsx scripts/scheduler.ts",
         "scheduler:now": "RUN_IMMEDIATELY=true tsx scripts/scheduler.ts",
         "scheduler:stats": "tsx scripts/scheduler.ts stats",
+        "verify": "tsx scripts/verify.ts",
         "db:init": "tsx scripts/init-database.ts",
         "db:seed": "tsx scripts/seed-database.ts",
         "db:setup": "npm run db:init && npm run db:seed"
