@@ -1,15 +1,20 @@
 /**
  * Texas UCC Scraper
- * 
+ *
  * Scrapes UCC filing data from Texas Secretary of State
  * Uses Puppeteer for real web scraping with anti-detection measures
+ *
+ * NOTE: As of September 2025, Texas requires SOS Portal authentication.
+ * Set TX_UCC_USERNAME and TX_UCC_PASSWORD environment variables.
  */
 
 import { BaseScraper, ScraperResult } from '../base-scraper'
 import puppeteer, { Browser, Page } from 'puppeteer'
+import { getTexasCredentials, hasTexasAuth } from '../auth-config'
 
 export class TexasScraper extends BaseScraper {
   private browser: Browser | null = null
+  private isAuthenticated: boolean = false
 
   constructor() {
     super({
@@ -42,6 +47,150 @@ export class TexasScraper extends BaseScraper {
     if (this.browser) {
       await this.browser.close()
       this.browser = null
+      this.isAuthenticated = false
+    }
+  }
+
+  /**
+   * Authenticate with Texas SOS Portal
+   *
+   * Attempts to log in using credentials from environment variables.
+   * Returns true if already authenticated or login successful, false otherwise.
+   */
+  private async authenticate(page: Page): Promise<{ success: boolean; error?: string }> {
+    // Check if already authenticated
+    if (this.isAuthenticated) {
+      return { success: true }
+    }
+
+    // Check if credentials are available
+    if (!hasTexasAuth()) {
+      return {
+        success: false,
+        error: 'Texas authentication credentials not configured. Set TX_UCC_USERNAME and TX_UCC_PASSWORD environment variables.'
+      }
+    }
+
+    const credentials = getTexasCredentials()!
+
+    try {
+      this.log('info', 'Attempting to authenticate with Texas SOS Portal')
+
+      // Navigate to login page (adjust URL as needed)
+      const loginUrl = 'https://www.sos.state.tx.us/ucc/login' // This may need adjustment
+      await page.goto(loginUrl, { waitUntil: 'networkidle2', timeout: this.config.timeout })
+
+      // Wait for login form
+      await this.sleep(2000)
+
+      // Find and fill username field
+      const usernameField = await page.evaluate(() => {
+        const selectors = [
+          'input[name="username"]',
+          'input[name="email"]',
+          'input[type="email"]',
+          'input[id="username"]',
+          'input[id="email"]',
+          'input[placeholder*="username" i]',
+          'input[placeholder*="email" i]'
+        ]
+
+        for (const selector of selectors) {
+          const input = document.querySelector(selector) as HTMLInputElement
+          if (input && input.offsetParent !== null) {
+            return selector
+          }
+        }
+        return null
+      })
+
+      if (!usernameField) {
+        return {
+          success: false,
+          error: 'Could not locate username/email field on login page'
+        }
+      }
+
+      await page.type(usernameField, credentials.username, { delay: 100 })
+      this.log('info', 'Username entered')
+
+      // Find and fill password field
+      const passwordField = await page.evaluate(() => {
+        const input = document.querySelector('input[type="password"]') as HTMLInputElement
+        return input && input.offsetParent !== null ? 'input[type="password"]' : null
+      })
+
+      if (!passwordField) {
+        return {
+          success: false,
+          error: 'Could not locate password field on login page'
+        }
+      }
+
+      await page.type(passwordField, credentials.password, { delay: 100 })
+      this.log('info', 'Password entered')
+
+      // Find and click submit button
+      const loginButton = await page.evaluate(() => {
+        const buttons = Array.from(document.querySelectorAll('button, input[type="submit"]'))
+        const loginBtn = buttons.find(btn => {
+          const text = (btn as HTMLElement).textContent?.toLowerCase() || (btn as HTMLInputElement).value?.toLowerCase() || ''
+          return text.includes('login') || text.includes('sign in') || text.includes('submit')
+        })
+        return loginBtn ? true : false
+      })
+
+      if (!loginButton) {
+        return {
+          success: false,
+          error: 'Could not locate login/submit button'
+        }
+      }
+
+      // Click login button
+      await page.click('button[type="submit"], input[type="submit"]')
+      this.log('info', 'Login button clicked, waiting for navigation')
+
+      // Wait for navigation after login
+      await page.waitForNavigation({ waitUntil: 'networkidle2', timeout: 15000 }).catch(() => {})
+      await this.sleep(2000)
+
+      // Check if login was successful
+      const loginSuccess = await page.evaluate(() => {
+        const bodyText = document.body.innerText.toLowerCase()
+        // If we see these, login likely failed
+        if (bodyText.includes('invalid username') ||
+            bodyText.includes('invalid password') ||
+            bodyText.includes('incorrect username') ||
+            bodyText.includes('incorrect password') ||
+            bodyText.includes('login failed')) {
+          return false
+        }
+        // If we still see login form, probably failed
+        if (document.querySelector('input[type="password"]')) {
+          return false
+        }
+        return true
+      })
+
+      if (loginSuccess) {
+        this.isAuthenticated = true
+        this.log('info', 'Successfully authenticated with Texas SOS Portal')
+        return { success: true }
+      } else {
+        return {
+          success: false,
+          error: 'Login failed - invalid credentials or portal change'
+        }
+      }
+
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error)
+      this.log('error', 'Authentication error', { error: errorMessage })
+      return {
+        success: false,
+        error: `Authentication error: ${errorMessage}`
+      }
     }
   }
 
@@ -132,13 +281,28 @@ export class TexasScraper extends BaseScraper {
       })
 
       if (requiresLogin) {
-        this.log('error', 'Texas UCC portal requires authentication', { companyName })
-        return {
-          success: false,
-          error: 'Texas UCC portal requires SOS Portal account login (as of Sept 2025). Please configure authentication or use manual search.',
-          searchUrl: this.config.baseUrl,
-          timestamp: new Date().toISOString()
+        this.log('info', 'Texas UCC portal requires authentication', { companyName })
+
+        // Attempt authentication
+        const authResult = await this.authenticate(page)
+
+        if (!authResult.success) {
+          this.log('error', 'Authentication failed', { error: authResult.error })
+          return {
+            success: false,
+            error: authResult.error || 'Texas UCC portal requires SOS Portal account login. Please configure TX_UCC_USERNAME and TX_UCC_PASSWORD environment variables.',
+            searchUrl: this.config.baseUrl,
+            timestamp: new Date().toISOString()
+          }
         }
+
+        // After successful authentication, navigate back to UCC page
+        this.log('info', 'Authentication successful, navigating to UCC search')
+        await page.goto(this.config.baseUrl, {
+          waitUntil: 'networkidle2',
+          timeout: this.config.timeout
+        })
+        await this.sleep(2000)
       }
 
       // Look for search form or search link
