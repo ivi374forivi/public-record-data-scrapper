@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useCallback } from 'react'
 import { useKV } from '@github/spark/hooks'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Button } from '@/components/ui/button'
@@ -40,9 +40,19 @@ import { toast } from 'sonner'
 import { AgenticDashboard } from '@/components/AgenticDashboard'
 import { useAgenticEngine } from '@/hooks/use-agentic-engine'
 import { SystemContext, PerformanceMetrics, UserAction } from '@/lib/agentic/types'
+import {
+  fetchProspects,
+  claimProspect,
+  unclaimProspect,
+  batchClaimProspects,
+  deleteProspects as deleteProspectsApi
+} from '@/lib/api/prospects'
+import { fetchCompetitors } from '@/lib/api/competitors'
+import { fetchPortfolio } from '@/lib/api/portfolio'
+import { fetchUserActions, logUserAction } from '@/lib/api/userActions'
 
 function App() {
-  const [prospects, setProspects, deleteProspects] = useKV<Prospect[]>('ucc-prospects', [])
+  const [prospects, setProspects, _deleteProspects] = useKV<Prospect[]>('ucc-prospects', [])
   const [competitors, setCompetitors] = useKV<CompetitorData[]>('competitor-data', [])
   const [portfolio, setPortfolio] = useKV<PortfolioCompany[]>('portfolio-companies', [])
   
@@ -59,6 +69,12 @@ function App() {
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc')
   const [exportFormat, setExportFormat] = useKV<ExportFormat>('export-format', 'json')
   const [userActions, setUserActions] = useKV<UserAction[]>('user-actions', [])
+  const [isLoading, setIsLoading] = useState(true)
+  const [loadError, setLoadError] = useState<string | null>(null)
+
+  const useMockData =
+    import.meta.env.DEV &&
+    ['1', 'true', 'yes'].includes(String(import.meta.env.VITE_USE_MOCK_DATA ?? '').toLowerCase())
 
   // Agentic Engine Integration
   const systemContext: SystemContext = useMemo(() => ({
@@ -81,101 +97,205 @@ function App() {
     safetyThreshold: 80
   })
 
-  useEffect(() => {
-    if (!prospects || prospects.length === 0) {
-      const initialProspects = generateProspects(24)
-      setProspects(initialProspects)
-    }
-    if (!competitors || competitors.length === 0) {
-      const initialCompetitors = generateCompetitorData()
-      setCompetitors(initialCompetitors)
-    }
-    if (!portfolio || portfolio.length === 0) {
-      const initialPortfolio = generatePortfolioCompanies(15)
-      setPortfolio(initialPortfolio)
-    }
-  }, [prospects, competitors, portfolio, setProspects, setCompetitors, setPortfolio])
+  const fetchData = useCallback(
+    async ({ signal, silent }: { signal?: AbortSignal; silent?: boolean } = {}) => {
+      if (!silent) {
+        setIsLoading(true)
+      }
+      setLoadError(null)
 
-  const stats = generateDashboardStats(prospects || [], portfolio || [])
-  
+      try {
+        if (useMockData) {
+          const [mockProspects, mockCompetitors, mockPortfolio] = [
+            generateProspects(24),
+            generateCompetitorData(),
+            generatePortfolioCompanies(15)
+          ]
+
+          if (signal?.aborted) {
+            return false
+          }
+
+          setProspects(mockProspects)
+          setCompetitors(mockCompetitors)
+          setPortfolio(mockPortfolio)
+          setLastDataRefresh(new Date().toISOString())
+          return true
+        }
+
+        const [liveProspects, liveCompetitors, livePortfolio, liveUserActions] = await Promise.all([
+          fetchProspects(signal),
+          fetchCompetitors(signal),
+          fetchPortfolio(signal),
+          fetchUserActions(signal)
+        ])
+
+        if (signal?.aborted) {
+          return false
+        }
+
+        setProspects(liveProspects)
+        setCompetitors(liveCompetitors)
+        setPortfolio(livePortfolio)
+        setUserActions(liveUserActions)
+        setLastDataRefresh(new Date().toISOString())
+        return true
+      } catch (error) {
+        if (signal?.aborted) {
+          return false
+        }
+
+        const message = error instanceof Error ? error.message : 'Failed to load data'
+        setLoadError(message)
+        console.error('Failed to load datasets', error)
+        return false
+      } finally {
+        if (!silent && !signal?.aborted) {
+          setIsLoading(false)
+        }
+      }
+    },
+    [useMockData, setProspects, setCompetitors, setPortfolio, setUserActions, setLastDataRefresh]
+  )
+
+  useEffect(() => {
+    const controller = new AbortController()
+    void fetchData({ signal: controller.signal })
+
+    return () => controller.abort()
+  }, [fetchData])
+
+  const stats = useMemo(() => {
+    if (!prospects || !portfolio || prospects.length === 0 || portfolio.length === 0) {
+      return null
+    }
+
+    try {
+      return generateDashboardStats(prospects, portfolio)
+    } catch (error) {
+      console.error('Failed to generate dashboard stats', error)
+      return null
+    }
+  }, [prospects, portfolio])
+
   // Track user actions for agentic analysis
-  const trackAction = (type: string, details: Record<string, any> = {}) => {
-    setUserActions((current) => {
+  const trackAction = useCallback(
+    async (type: string, details: Record<string, any> = {}) => {
       const newAction: UserAction = {
         type,
         timestamp: new Date().toISOString(),
         details
       }
-      return [...(current || []), newAction].slice(-100) // Keep last 100 actions
-    })
-  }
 
-  const handleRefreshData = () => {
-    const now = new Date().toISOString()
-    setProspects((current) => {
-      if (!current || current.length === 0) return []
-      return current.map(p => ({
-        ...p,
-        healthScore: {
-          ...p.healthScore,
-          lastUpdated: now.split('T')[0]
-        }
-      }))
-    })
-    setLastDataRefresh(now)
-    trackAction('refresh-data')
-    toast.success('Data refreshed', {
-      description: 'All health scores and signals have been updated.'
-    })
-  }
+      setUserActions((current) => [...(current ?? []), newAction].slice(-100))
+
+      if (useMockData) {
+        return
+      }
+
+      try {
+        await logUserAction(newAction)
+      } catch (error) {
+        console.error('Failed to persist user action', error)
+      }
+    },
+    [setUserActions, useMockData]
+  )
+
+  const handleRefreshData = useCallback(async () => {
+    const success = await fetchData()
+
+    if (success) {
+      void trackAction('refresh-data')
+      toast.success('Data refreshed', {
+        description: useMockData
+          ? 'Mock data regenerated for offline demo mode.'
+          : 'Latest datasets synchronized from ingestion services.'
+      })
+    } else {
+      toast.error('Refresh failed', {
+        description: loadError ?? 'Unable to refresh data from the server.'
+      })
+    }
+  }, [fetchData, loadError, trackAction, useMockData])
 
   const handleProspectSelect = (prospect: Prospect) => {
     setSelectedProspect(prospect)
     setDialogOpen(true)
-    trackAction('prospect-select', { prospectId: prospect.id })
+    void trackAction('prospect-select', { prospectId: prospect.id })
   }
 
-  const handleClaimLead = (prospect: Prospect) => {
+  const handleClaimLead = async (prospect: Prospect) => {
     const user = 'Current User'
-    
-    setProspects((currentProspects) => {
-      if (!currentProspects) return []
-      return currentProspects.map(p =>
-        p.id === prospect.id
-          ? { 
-              ...p, 
-              status: 'claimed', 
-              claimedBy: user, 
-              claimedDate: new Date().toISOString().split('T')[0] 
-            }
-          : p
-      )
-    })
-    setSelectedProspect(null)
-    setDialogOpen(false)
-    trackAction('claim', { prospectId: prospect.id })
-    toast.success('Lead claimed successfully', {
-      description: `${prospect.companyName} has been added to your pipeline.`
-    })
+    const today = new Date().toISOString().split('T')[0]
+
+    try {
+      const updatedProspect = useMockData
+        ? {
+            ...prospect,
+            status: 'claimed',
+            claimedBy: user,
+            claimedDate: today
+          }
+        : await claimProspect(prospect.id, user)
+
+      setProspects((currentProspects) => {
+        const list = currentProspects ?? []
+        const exists = list.some(p => p.id === updatedProspect.id)
+        if (!exists) {
+          return [...list, updatedProspect]
+        }
+        return list.map(p => (p.id === updatedProspect.id ? updatedProspect : p))
+      })
+
+      setSelectedProspect(null)
+      setDialogOpen(false)
+      void trackAction('claim', { prospectId: prospect.id })
+      toast.success('Lead claimed successfully', {
+        description: `${updatedProspect.companyName} has been added to your pipeline.`
+      })
+    } catch (error) {
+      console.error('Failed to claim prospect', error)
+      toast.error('Unable to claim lead', {
+        description: error instanceof Error
+          ? error.message
+          : 'An unexpected error occurred while claiming the lead.'
+      })
+    }
   }
 
-  const handleUnclaimLead = (prospect: Prospect) => {
-    setProspects((currentProspects) => {
-      if (!currentProspects) return []
-      return currentProspects.map(p =>
-        p.id === prospect.id
-          ? { 
-              ...p, 
-              status: 'new', 
-              claimedBy: undefined, 
-              claimedDate: undefined 
-            }
-          : p
-      )
-    })
-    toast.info('Lead unclaimed', {
-      description: `${prospect.companyName} is now available for claiming.`
-    })
+  const handleUnclaimLead = async (prospect: Prospect) => {
+    try {
+      const updatedProspect = useMockData
+        ? {
+            ...prospect,
+            status: 'new',
+            claimedBy: undefined,
+            claimedDate: undefined
+          }
+        : await unclaimProspect(prospect.id)
+
+      setProspects((currentProspects) => {
+        const list = currentProspects ?? []
+        const exists = list.some(p => p.id === updatedProspect.id)
+        if (!exists) {
+          return list
+        }
+        return list.map(p => (p.id === updatedProspect.id ? updatedProspect : p))
+      })
+
+      toast.info('Lead unclaimed', {
+        description: `${updatedProspect.companyName} is now available for claiming.`
+      })
+      void trackAction('unclaim', { prospectId: prospect.id })
+    } catch (error) {
+      console.error('Failed to unclaim prospect', error)
+      toast.error('Unable to unclaim lead', {
+        description: error instanceof Error
+          ? error.message
+          : 'An unexpected error occurred while unclaiming the lead.'
+      })
+    }
   }
 
   const handleExportProspect = (prospect: Prospect) => {
@@ -187,12 +307,17 @@ function App() {
       const filterInfo = searchQuery || industryFilter !== 'all' || stateFilter !== 'all' || minScore > 0
         ? 'filtered'
         : undefined
-      
+
       exportProspects(prospectsToExport, exportFormat, filterInfo)
-      
+
       const formatLabel = exportFormat.toUpperCase()
       toast.success(`Prospect(s) exported as ${formatLabel}`, {
         description: `${prospectsToExport.length} lead(s) exported successfully.`
+      })
+      void trackAction('export-prospects', {
+        format: exportFormat,
+        count: prospectsToExport.length,
+        filtered: Boolean(filterInfo)
       })
     } catch (error) {
       toast.error('Export failed', {
@@ -201,22 +326,50 @@ function App() {
     }
   }
 
-  const handleBatchClaim = (ids: string[]) => {
+  const handleBatchClaim = async (ids: string[]) => {
+    if (ids.length === 0) return
+
     const user = 'Current User'
-    const now = new Date().toISOString().split('T')[0]
-    
-    setProspects((currentProspects) => {
-      if (!currentProspects) return []
-      return currentProspects.map(p =>
-        ids.includes(p.id) && p.status !== 'claimed'
-          ? { ...p, status: 'claimed', claimedBy: user, claimedDate: now }
-          : p
-      )
-    })
-    
-    toast.success(`${ids.length} leads claimed`, {
-      description: 'Selected leads have been added to your pipeline.'
-    })
+    const today = new Date().toISOString().split('T')[0]
+
+    if (useMockData) {
+      setProspects((currentProspects) => {
+        if (!currentProspects) return []
+        return currentProspects.map(p =>
+          ids.includes(p.id) && p.status !== 'claimed'
+            ? { ...p, status: 'claimed', claimedBy: user, claimedDate: today }
+            : p
+        )
+      })
+
+      toast.success(`${ids.length} leads claimed`, {
+        description: 'Selected leads have been added to your pipeline.'
+      })
+      void trackAction('batch-claim', { prospectIds: ids })
+      return
+    }
+
+    try {
+      const updatedProspects = await batchClaimProspects(ids, user)
+      const updates = new Map(updatedProspects.map(p => [p.id, p]))
+
+      setProspects((currentProspects) => {
+        const list = currentProspects ?? []
+        return list.map(p => updates.get(p.id) ?? p)
+      })
+
+      toast.success(`${ids.length} leads claimed`, {
+        description: 'Selected leads have been added to your pipeline.'
+      })
+      void trackAction('batch-claim', { prospectIds: ids })
+    } catch (error) {
+      console.error('Failed to batch claim prospects', error)
+      toast.error('Unable to claim selected leads', {
+        description: error instanceof Error
+          ? error.message
+          : 'An unexpected error occurred while claiming the selected leads.'
+      })
+    }
   }
 
   const handleBatchExport = (ids: string[]) => {
@@ -224,15 +377,41 @@ function App() {
     handleExportProspects(prospectsToExport)
   }
 
-  const handleBatchDelete = (ids: string[]) => {
-    setProspects((currentProspects) => {
-      if (!currentProspects) return []
-      return currentProspects.filter(p => !ids.includes(p.id))
-    })
-    
-    toast.info(`${ids.length} prospects removed`, {
-      description: 'Selected prospects have been removed from the list.'
-    })
+  const handleBatchDelete = async (ids: string[]) => {
+    if (ids.length === 0) return
+
+    if (useMockData) {
+      setProspects((currentProspects) => {
+        if (!currentProspects) return []
+        return currentProspects.filter(p => !ids.includes(p.id))
+      })
+
+      toast.info(`${ids.length} prospects removed`, {
+        description: 'Selected prospects have been removed from the list.'
+      })
+      void trackAction('batch-delete', { prospectIds: ids })
+      return
+    }
+
+    try {
+      await deleteProspectsApi(ids)
+      setProspects((currentProspects) => {
+        if (!currentProspects) return []
+        return currentProspects.filter(p => !ids.includes(p.id))
+      })
+
+      toast.info(`${ids.length} prospects removed`, {
+        description: 'Selected prospects have been removed from the list.'
+      })
+      void trackAction('batch-delete', { prospectIds: ids })
+    } catch (error) {
+      console.error('Failed to delete prospects', error)
+      toast.error('Unable to delete selected prospects', {
+        description: error instanceof Error
+          ? error.message
+          : 'An unexpected error occurred while deleting the selected prospects.'
+      })
+    }
   }
 
   const filteredAndSortedProspects = useMemo(() => {
@@ -342,7 +521,38 @@ function App() {
 
       <main className="container mx-auto px-3 sm:px-4 md:px-6 py-4 sm:py-6 md:py-8">
         <div className="space-y-4 sm:space-y-6 md:space-y-8">
-          <StatsOverview stats={stats} />
+          {loadError && (
+            <div className="glass-effect border border-red-500/40 rounded-lg p-4 text-red-100 flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+              <div>
+                <p className="font-semibold">Failed to load live data</p>
+                <p className="text-sm text-red-100/80">{loadError}</p>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => void fetchData()}
+                className="border-red-500/60 text-red-100 hover:bg-red-500/20"
+              >
+                Retry
+              </Button>
+            </div>
+          )}
+
+          {isLoading && (
+            <div className="glass-effect border border-white/20 rounded-lg p-4 text-sm text-white/80">
+              Loading live data from ingestion services...
+            </div>
+          )}
+
+          {stats ? (
+            <StatsOverview stats={stats} />
+          ) : (
+            !isLoading && (
+              <div className="glass-effect border border-white/10 rounded-lg p-4 text-sm text-white/70">
+                No aggregated metrics are available yet. Refresh to pull the latest insights.
+              </div>
+            )
+          )}
 
           {lastDataRefresh && (
             <StaleDataWarning 
