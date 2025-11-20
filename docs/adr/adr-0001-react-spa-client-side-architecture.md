@@ -32,14 +32,14 @@ The platform serves sales teams who need to quickly identify and qualify high-va
 
 ## Decision
 
-We will build the UCC-MCA Intelligence Platform as a **Single-Page Application (SPA)** using **React 19** with **client-side state management** via the **@github/spark KV storage** system and React hooks, compiled with **Vite** and written in **TypeScript**.
+We will build the UCC-MCA Intelligence Platform as a **Single-Page Application (SPA)** using **React 19.x** with **client-side state management** via the **@github/spark** framework's KV storage hooks and React hooks, compiled with **Vite** and written in **TypeScript**.
 
 **Core architectural choices:**
 
-- **React 19.0.0** as the UI framework
-- **TypeScript 5.7** for type safety and enhanced developer experience
-- **Vite 6.4** as the build tool and development server
-- **@github/spark** for client-side persistent key-value storage
+- **React 19.x** as the UI framework
+- **TypeScript 5.x** for type safety and enhanced developer experience
+- **Vite 6.x** as the build tool and development server
+- **@github/spark** React framework with KV storage hooks for client-side state persistence
 - **Component-based architecture** with Radix UI primitives and Shadcn UI patterns
 - **Client-side data processing** with useMemo optimization for filtering and sorting
 - **Static site deployment** model (initially)
@@ -113,5 +113,5 @@ This architecture prioritizes fast development velocity, excellent developer exp
 - **REF-002**: [PRD.md](/docs/PRD.md) - Product requirements document outlining feature specifications and user workflows that inform architectural requirements
 - **REF-003**: [React 19 Documentation](https://react.dev/) - Official React documentation for framework capabilities and best practices
 - **REF-004**: [Vite Documentation](https://vitejs.dev/) - Build tool documentation for development and production optimization strategies
-- **REF-005**: [@github/spark Documentation](https://github.com/github/spark) - Client-side KV storage system used for persistent state management
+- **REF-005**: [@github/spark Documentation](https://github.com/github/spark) - GitHub's React framework providing KV storage hooks and component patterns for client-side state management
 - **REF-006**: [TypeScript Handbook](https://www.typescriptlang.org/docs/) - TypeScript language reference for type system implementation
