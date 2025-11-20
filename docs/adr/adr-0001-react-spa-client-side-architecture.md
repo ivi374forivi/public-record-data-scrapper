@@ -113,5 +113,5 @@ This architecture prioritizes fast development velocity, excellent developer exp
 - **REF-002**: [PRD.md](/docs/PRD.md) - Product requirements document outlining feature specifications and user workflows that inform architectural requirements
 - **REF-003**: [React 19 Documentation](https://react.dev/) - Official React documentation for framework capabilities and best practices
 - **REF-004**: [Vite Documentation](https://vitejs.dev/) - Build tool documentation for development and production optimization strategies
-- **REF-005**: [@github/spark Documentation](https://github.com/primer/react) - Client-side KV storage system used for persistent state management
+- **REF-005**: [@github/spark Documentation](https://github.com/github/spark) - Client-side KV storage system used for persistent state management
 - **REF-006**: [TypeScript Handbook](https://www.typescriptlang.org/docs/) - TypeScript language reference for type system implementation
