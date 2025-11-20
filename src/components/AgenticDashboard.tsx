@@ -208,7 +208,7 @@ export function AgenticDashboard({ agentic }: AgenticDashboardProps) {
 
 interface ImprovementCardProps {
   improvement: Improvement
-  onApprove: (id: string) => void
+  onApprove: (id: string) => Promise<void>
   priorityColors: Record<ImprovementPriority, string>
   categoryIcons: Record<ImprovementCategory, React.ReactNode>
   showActions?: boolean
@@ -327,7 +327,9 @@ function ImprovementCard({
           {showActions && status === 'detected' && (
             <Button
               size="sm"
-              onClick={() => onApprove(improvement.id)}
+              onClick={async () => {
+                await onApprove(improvement.id)
+              }}
               className="gap-2"
             >
               <CheckCircle className="w-4 h-4" />
