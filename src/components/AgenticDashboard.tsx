@@ -41,6 +41,7 @@ interface AgenticDashboardProps {
 export function AgenticDashboard({ agentic, competitors }: AgenticDashboardProps) {
   const [selectedTab, setSelectedTab] = useState('overview')
   const { systemHealth, improvements, isRunning, runCycle, approveImprovement } = agentic
+  const competitorCount = competitors.length
 
   const priorityColors: Record<ImprovementPriority, string> = {
     critical: 'bg-red-500',
@@ -155,6 +156,13 @@ export function AgenticDashboard({ agentic, competitors }: AgenticDashboardProps
             <TabsTrigger value="pending">
               Pending ({pendingImprovements.length})
             </TabsTrigger>
+<<<<<<< HEAD
+            <TabsTrigger value="competitor">
+              <Users className="w-4 h-4 mr-2" />
+              Competitors ({competitorCount})
+            </TabsTrigger>
+=======
+>>>>>>> origin/main
           </TabsList>
 
           <TabsContent value="overview" className="space-y-4">
@@ -205,6 +213,16 @@ export function AgenticDashboard({ agentic, competitors }: AgenticDashboardProps
               ))
             )}
           </TabsContent>
+<<<<<<< HEAD
+          <TabsContent value="competitor">
+            <CompetitorAnalysis
+              data={competitors}
+              isLoading={competitorsLoading}
+              lastUpdated={competitorLastUpdated}
+            />
+          </TabsContent>
+=======
+>>>>>>> origin/main
         </Tabs>
       </div>
     </Card>
