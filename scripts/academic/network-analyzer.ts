@@ -14,10 +14,52 @@ import type {
   Community,
   Researcher,
   Team,
-  Trend
+  Trend,
+  Institution
 } from './types'
 
 export class NetworkAnalyzer {
+  /**
+   * Helper to get or create an institution from a name string
+   */
+  private getOrCreateInstitution(name: string, institutions: Map<string, Institution>): Institution {
+    const cleanName = name.trim()
+    // Simple ID generation
+    const id = 'inst-' + cleanName.toLowerCase().replace(/[^a-z0-9]+/g, '-')
+
+    if (institutions.has(id)) {
+      return institutions.get(id)!
+    }
+
+    // Infer type
+    let type: Institution['type'] = 'company'
+    const lower = cleanName.toLowerCase()
+    if (lower.includes('university') || lower.includes('college') || lower.includes('school')) {
+      type = 'university'
+    } else if (lower.includes('hospital') || lower.includes('medical') || lower.includes('clinic')) {
+      type = 'hospital'
+    } else if (lower.includes('institute') || lower.includes('laboratory') || lower.includes('center')) {
+      type = 'research_institute'
+    }
+
+    const institution: Institution = {
+      id,
+      name: cleanName,
+      type,
+      country: 'Unknown',
+      researchers: [],
+      papers: [],
+      topics: [],
+      collaborations: [],
+      paper_count: 0,
+      citation_count: 0,
+      h_index: 0
+    }
+
+    institutions.set(id, institution)
+    return institution
+  }
+
   /**
    * Calculate PageRank for papers in citation network
    */
@@ -334,6 +376,7 @@ export class NetworkAnalyzer {
     const researchers = new Map<string, Researcher>()
     const collaborations: Collaboration[] = []
     const collaborationMap = new Map<string, Collaboration>()
+    const institutions = new Map<string, Institution>()
 
     // Extract all researchers
     papers.forEach(paper => {
@@ -342,7 +385,7 @@ export class NetworkAnalyzer {
           researchers.set(author.id, {
             id: author.id,
             name: author.name,
-            affiliations: [], // TODO: Extract from papers
+            affiliations: [],
             papers: [],
             topics: [],
             h_index: 0, // TODO: Calculate
@@ -359,6 +402,37 @@ export class NetworkAnalyzer {
 
         const researcher = researchers.get(author.id)!
         researcher.papers.push(paper.id)
+
+        // Process affiliations
+        if (author.affiliations && author.affiliations.length > 0) {
+          author.affiliations.forEach(affilStr => {
+            const institution = this.getOrCreateInstitution(affilStr, institutions)
+
+            // Link institution to researcher if not already linked
+            if (!researcher.affiliations.some(inst => inst.id === institution.id)) {
+              researcher.affiliations.push(institution)
+            }
+
+            // Link researcher to institution
+            if (!institution.researchers.includes(researcher.id)) {
+              institution.researchers.push(researcher.id)
+            }
+
+            // Link paper to institution
+            if (!institution.papers.includes(paper.id)) {
+              institution.papers.push(paper.id)
+              institution.paper_count++
+              institution.citation_count += paper.citationCount
+            }
+
+            // Add topics to institution
+            paper.topics.forEach(topic => {
+              if (!institution.topics.includes(topic)) {
+                institution.topics.push(topic)
+              }
+            })
+          })
+        }
 
         // Update date range
         if (paper.publicationDate < researcher.first_publication) {
@@ -439,7 +513,7 @@ export class NetworkAnalyzer {
       researchers,
       collaborations,
       teams,
-      institutions: new Map() // TODO: Extract from papers
+      institutions
     }
   }
 
