@@ -6,6 +6,7 @@ import { HealthGradeBadge } from './HealthGradeBadge'
 import { Buildings, TrendUp, MapPin, Brain } from '@phosphor-icons/react'
 import { cn } from '@/lib/utils'
 import { motion } from 'framer-motion'
+import { memo } from 'react'
 
 interface ProspectCardProps {
   prospect: Prospect
@@ -22,7 +23,8 @@ const industryIcons: Record<string, string> = {
   technology: '💻'
 }
 
-export function ProspectCard({ prospect, onSelect }: ProspectCardProps) {
+// Optimization: Memoize the component to prevent re-renders when parent state changes
+export const ProspectCard = memo(function ProspectCard({ prospect, onSelect }: ProspectCardProps) {
   const isClaimed = prospect.status === 'claimed'
   const hasGrowthSignals = prospect.growthSignals.length > 0
   const yearsSinceDefault = Math.floor(prospect.timeSinceDefault / 365)
@@ -180,4 +182,4 @@ export function ProspectCard({ prospect, onSelect }: ProspectCardProps) {
       </Card>
     </motion.div>
   )
-}
+})

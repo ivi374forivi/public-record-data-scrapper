@@ -238,11 +238,12 @@ function App() {
     }
   }, [fetchData, loadError, trackAction, useMockData])
 
-  const handleProspectSelect = (prospect: Prospect) => {
+  // Optimization: Memoize the selection handler to prevent ProspectCard re-renders
+  const handleProspectSelect = useCallback((prospect: Prospect) => {
     setSelectedProspect(prospect)
     setDialogOpen(true)
     void trackAction('prospect-select', { prospectId: prospect.id })
-  }
+  }, [trackAction])
 
   const handleClaimLead = async (prospect: Prospect) => {
     const user = 'Current User'
