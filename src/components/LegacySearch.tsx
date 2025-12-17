@@ -1,4 +1,5 @@
 import { FormEvent, useMemo, useState } from "react"
+import { Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import {
@@ -123,8 +124,11 @@ export function LegacySearch() {
         className="flex flex-col gap-3 sm:gap-4 lg:flex-row lg:items-end"
       >
         <div className="flex-1 space-y-2">
-          <label className="text-xs uppercase tracking-wide text-white/60">Query</label>
+          <label htmlFor="search-query" className="text-xs uppercase tracking-wide text-white/60">
+            Query
+          </label>
           <Input
+            id="search-query"
             value={query}
             onChange={(event) => setQuery(event.target.value)}
             placeholder="Example: 'seeking MCA', 'need funding', 'UCC financing statement' …"
@@ -133,9 +137,14 @@ export function LegacySearch() {
         </div>
 
         <div className="min-w-[220px] space-y-2">
-          <label className="text-xs uppercase tracking-wide text-white/60">Source</label>
+          <label htmlFor="search-source" className="text-xs uppercase tracking-wide text-white/60">
+            Source
+          </label>
           <Select value={source} onValueChange={setSource}>
-            <SelectTrigger className="glass-effect border-white/30 text-white">
+            <SelectTrigger
+              id="search-source"
+              className="glass-effect border-white/30 text-white"
+            >
               <SelectValue />
             </SelectTrigger>
             <SelectContent className="glass-effect border-white/30">
@@ -154,7 +163,14 @@ export function LegacySearch() {
             className="h-10 sm:h-11"
             disabled={isLoading}
           >
-            {isLoading ? "Searching…" : "Start Search"}
+            {isLoading ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Searching…
+              </>
+            ) : (
+              "Start Search"
+            )}
           </Button>
           <Button
             type="button"
@@ -162,6 +178,7 @@ export function LegacySearch() {
             className={cn("h-10 sm:h-11", isLoading && "opacity-60")}
             onClick={handleClear}
             disabled={isLoading && results.length === 0}
+            aria-label="Clear search results"
           >
             Clear
           </Button>
