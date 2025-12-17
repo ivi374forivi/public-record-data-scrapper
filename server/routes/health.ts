@@ -8,11 +8,13 @@ const router = Router()
 router.get(
   '/',
   asyncHandler(async (req, res) => {
+    const isDev = process.env.NODE_ENV === 'development'
+
     res.json({
       status: 'ok',
       timestamp: new Date().toISOString(),
       uptime: process.uptime(),
-      environment: process.env.NODE_ENV || 'development'
+      ...(isDev && { environment: process.env.NODE_ENV || 'development' })
     })
   })
 )
@@ -21,24 +23,44 @@ router.get(
 router.get(
   '/detailed',
   asyncHandler(async (req, res) => {
-    const checks = {
+    const isDev = process.env.NODE_ENV === 'development'
+
+    interface HealthCheck {
+      status: string
+      timestamp: string
+      uptime: number
+      environment?: string
+      services?: {
+        database: string
+        memory: string
+        cpu: string
+      }
+    }
+
+    const checks: HealthCheck = {
       status: 'ok',
       timestamp: new Date().toISOString(),
       uptime: process.uptime(),
-      environment: process.env.NODE_ENV || 'development',
-      services: {
-        database: 'unknown',
-        memory: 'ok',
-        cpu: 'ok'
-      }
+      ...(isDev && {
+        environment: process.env.NODE_ENV || 'development',
+        services: {
+          database: 'unknown',
+          memory: 'ok',
+          cpu: 'ok'
+        }
+      })
     }
 
     // Check database
     try {
       await database.query('SELECT 1')
-      checks.services.database = 'ok'
+      if (checks.services) {
+        checks.services.database = 'ok'
+      }
     } catch (error) {
-      checks.services.database = 'error'
+      if (checks.services) {
+        checks.services.database = 'error'
+      }
       checks.status = 'degraded'
     }
 
@@ -48,7 +70,9 @@ router.get(
     const memTotalMB = Math.round(memUsage.heapTotal / 1024 / 1024)
 
     if (memUsedMB / memTotalMB > 0.9) {
-      checks.services.memory = 'warning'
+      if (checks.services) {
+        checks.services.memory = 'warning'
+      }
       checks.status = 'degraded'
     }
 
