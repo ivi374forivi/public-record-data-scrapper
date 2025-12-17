@@ -147,7 +147,7 @@ export function EmailComposer({
                 <SelectValue placeholder="Choose a template or start from scratch" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Blank Template</SelectItem>
+                <SelectItem value="custom">Blank Template</SelectItem>
                 {Object.entries(groupedTemplates).map(([category, templates]) => (
                   <div key={category}>
                     <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">
@@ -175,8 +175,9 @@ export function EmailComposer({
               <Input
                 id="recipient"
                 value={`${prospect.companyName} <contact@${prospect.companyName.toLowerCase().replace(/\s+/g, '')}.com>`}
-                disabled
-                className="bg-muted"
+                readOnly
+                className="bg-muted cursor-default focus-visible:ring-1"
+                aria-readonly="true"
               />
               <p className="text-xs text-muted-foreground mt-1">
                 Note: This is a placeholder email. In production, integrate with your CRM for actual contact details.
@@ -185,20 +186,29 @@ export function EmailComposer({
 
             <div>
               <Label htmlFor="subject" className="text-sm font-medium mb-2 block">
-                Subject
+                Subject <span className="text-red-500" aria-hidden="true">*</span>
               </Label>
               <Input
                 id="subject"
                 value={subject}
                 onChange={(e) => setSubject(e.target.value)}
                 placeholder="Enter email subject"
+                required
+                aria-required="true"
               />
             </div>
 
             <div>
-              <Label htmlFor="body" className="text-sm font-medium mb-2 block">
-                Email Body
-              </Label>
+              <div className="flex justify-between items-center mb-2">
+                <Label htmlFor="body" className="text-sm font-medium">
+                  Email Body <span className="text-red-500" aria-hidden="true">*</span>
+                </Label>
+                {!previewMode && (
+                  <span className="text-xs text-muted-foreground">
+                    {body.length} characters
+                  </span>
+                )}
+              </div>
               {previewMode ? (
                 <Card className="p-4 bg-muted/50 min-h-[300px] whitespace-pre-wrap">
                   {body || 'Email body preview will appear here...'}
@@ -210,6 +220,8 @@ export function EmailComposer({
                   onChange={(e) => setBody(e.target.value)}
                   placeholder="Enter email body"
                   className="min-h-[300px] font-mono text-sm"
+                  required
+                  aria-required="true"
                 />
               )}
               <div className="flex justify-end mt-2">
