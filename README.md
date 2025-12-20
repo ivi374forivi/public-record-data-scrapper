@@ -411,6 +411,12 @@ See [TESTING.md](./docs/TESTING.md) for detailed testing documentation.
 - **Dynatrace Expert**: See [.github/agents/dynatrace-expert.md](.github/agents/dynatrace-expert.md) - Master observability specialist with complete DQL knowledge
 - **Custom Agents Guide**: See [.github/agents/README.md](.github/agents/README.md) - How to use and create custom agents
 
+### Portfolio & Hiring
+- **Executive Hiring Video System**: See [docs/video-portfolio/](docs/video-portfolio/) - Complete system for creating a 3-5 minute portfolio video for non-technical executives
+  - Transform this repository into a compelling hiring pitch
+  - Includes script, visuals, production guide, and translation glossary
+  - Designed for decision-makers who don't read code
+
 ## 🔒 Security
 
 - **Zero Vulnerabilities** - All dependencies audited and updated
