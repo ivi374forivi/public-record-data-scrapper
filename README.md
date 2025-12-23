@@ -10,6 +10,7 @@
 
 **NEW: Terminal CLI Tool** - Standalone command-line scraper for individual use without GUI. Perfect for field data collection. See [CLI_USAGE.md](./CLI_USAGE.md) for details.
 
+**NEW: Video Production Agent** - Autonomous system for generating professional MP4 videos from markdown scripts. Fully automated local-first workflow. See [scripts/video-production/README.md](./scripts/video-production/README.md) for details.
 ## 🎯 Overview
 
 The UCC-MCA Intelligence Platform is a sophisticated lead generation tool that analyzes Uniform Commercial Code (UCC) filings to identify businesses with active financing and predict their likelihood of needing Merchant Cash Advances. The platform combines AI-powered analysis, automated data enrichment, and intelligent scoring to help MCA providers find and prioritize the best prospects.
@@ -23,6 +24,7 @@ The UCC-MCA Intelligence Platform is a sophisticated lead generation tool that a
 ✅ **Smart Scoring** - ML-based priority scoring and health analysis
 ✅ **Real-Time Monitoring** - Live prospect tracking and analytics with agent orchestration
 ✅ **Export Capabilities** - CSV, JSON, Excel formats
+✅ **Video Production** - Autonomous agent for generating professional portfolio videos
 ✅ **Security First** - Zero vulnerabilities, type-safe codebase
 ✅ **Infrastructure as Code** - Complete Terraform configuration for AWS deployment
 
@@ -31,6 +33,7 @@ The UCC-MCA Intelligence Platform is a sophisticated lead generation tool that a
 - [Features](#features)
 - [Quick Start](#quick-start)
 - [CLI Tool](#cli-tool)
+- [Video Production](#video-production)
 - [Infrastructure Setup](#infrastructure-setup)
 - [Technology Stack](#technology-stack)
 - [Getting Started](#getting-started)
@@ -74,7 +77,7 @@ npm run dev
 The platform includes a **standalone terminal-based scraper** for individual use:
 
 ### CLI Features
-
+>>>>>>> origin/main
 - 🔍 **UCC Filing Scraper**: Extract filings from CA, TX, FL state portals
 - 📊 **Data Enrichment**: Fetch data from SEC, OSHA, USPTO, Census, SAM.gov
 - 📝 **Multiple Formats**: Export as JSON or CSV
@@ -100,6 +103,35 @@ npm run scrape -- batch -i companies.csv -o ./results
 
 See [CLI_USAGE.md](./CLI_USAGE.md) for detailed documentation.
 
+## Video Production
+
+The platform includes an **autonomous video production agent** for creating professional videos:
+
+### Video Production Features
+- 🎬 **Automated Pipeline**: Script → Narration → Visuals → Final MP4
+- 🎙️ **Local TTS**: Platform-specific text-to-speech (macOS `say`, Linux `espeak`/`festival`)
+- 🎨 **Visual Generation**: Automatic title cards, diagrams, and metrics displays
+- 🎞️ **FFmpeg Rendering**: High-quality 1080p/4K output with scene transitions
+- 🔄 **Intelligent Fallbacks**: Graceful degradation when components unavailable
+- 📊 **Detailed Logging**: Comprehensive render reports and error tracking
+
+### Quick Video Generation
+
+```bash
+# Validate setup
+npm run video:validate
+
+# Generate videos from scripts
+npm run video:generate
+
+# Custom configuration
+./scripts/video-production/generate-videos.sh \
+  --pattern "*.md" \
+  --resolution 3840x2160 \
+  --fps 60
+```
+
+See [scripts/video-production/README.md](./scripts/video-production/README.md) for complete documentation and [scripts/video-production/INSTALL.md](./scripts/video-production/INSTALL.md) for installation instructions.
 ## Infrastructure Setup
 
 The platform includes production-ready Infrastructure as Code (IaC) using Terraform for AWS deployment:
@@ -207,7 +239,6 @@ npm run test:coverage
 ```
 
 **Test Statistics:**
-
 - Total Tests: 526 (100% passing)
 - Test Files: 15
 - Test Suites: 60+
@@ -231,7 +262,6 @@ npm run preview
 The platform includes a comprehensive multi-agent autonomous system with **60+ specialized agents**:
 
 **Analysis Agents (5):**
-
 - **Data Analyzer Agent** - Monitors data quality and freshness
 - **Optimizer Agent** - Suggests performance improvements
 - **Security Agent** - Scans for vulnerabilities and security issues
@@ -239,7 +269,6 @@ The platform includes a comprehensive multi-agent autonomous system with **60+ s
 - **Competitor Agent** - Analyzes competitive threats and opportunities
 
 **Data Collection Agents (55+):**
-
 - **State Agents (50)** - One agent per US state + DC for UCC filing collection
   - State-specific portal scraping and API integration
   - Automatic rate limiting and business hours compliance
@@ -253,7 +282,6 @@ The platform includes a comprehensive multi-agent autonomous system with **60+ s
   - Webhook receivers for real-time updates
 
 **Agent Orchestration:**
-
 - **AgentOrchestrator** - Coordinates multi-agent workflows across all 60+ agents
 - **Factory Patterns** - Dynamic agent creation and management
 - **Parallel Execution** - Run analysis across all states simultaneously
@@ -364,7 +392,6 @@ Comprehensive test suite with **526 tests** covering:
 - **Edge Cases** - Boundary conditions, error recovery, concurrent operations, state management
 
 **Test Coverage**:
-
 - Test Files: 15
 - Test Suites: 60+
 - Total Tests: 526
@@ -377,7 +404,6 @@ See [TESTING.md](./docs/TESTING.md) for detailed testing documentation.
 ## 📚 Documentation
 
 ### User Documentation
-
 - [README](README.md) - This file
 - [Quick Start Guide](docs/QUICKSTART.md) - Get started quickly
 - [Contributing Guidelines](CONTRIBUTING.md)
@@ -386,7 +412,6 @@ See [TESTING.md](./docs/TESTING.md) for detailed testing documentation.
 - [TODO List](docs/TODO.md) - Current tasks and priorities
 
 ### Technical Documentation
-
 - [Data Pipeline Guide](docs/technical/DATA_PIPELINE.md)
 - [Deployment Guide](docs/technical/DEPLOYMENT.md)
 - [Infrastructure Setup](terraform/README.md) - Terraform configuration and deployment
@@ -402,13 +427,14 @@ See [TESTING.md](./docs/TESTING.md) for detailed testing documentation.
 
 ### Project Reports
 
+
+### Project Reports
 - [Branch Cleanup Plan](docs/reports/BRANCH_CLEANUP_PLAN.md)
 - [Branch Review Summary](docs/reports/BRANCH_REVIEW_SUMMARY.md)
 - [Mega Consolidation Summary](docs/reports/MEGA_CONSOLIDATION_SUMMARY.md)
 - [Final Cleanup Report](docs/reports/FINAL_CLEANUP_REPORT.md)
 
 ### Core Documentation
-
 - **Product Requirements**: See [PRD.md](./PRD.md) for detailed feature specifications
 - **Logic Analysis**: See [LOGIC_ANALYSIS.md](./LOGIC_ANALYSIS.md) for implementation details
 - **Security**: See [SECURITY.md](./SECURITY.md) for security policies
@@ -437,6 +463,23 @@ See [TESTING.md](./docs/TESTING.md) for detailed testing documentation.
 - **Regular Audits** - Continuous security monitoring
 
 See [SECURITY_IMPLEMENTATION.md](docs/SECURITY_IMPLEMENTATION.md) for comprehensive security documentation.
+
+- **Dynatrace Expert**: See [.github/agents/dynatrace-expert.md](.github/agents/dynatrace-expert.md) - Master observability specialist with complete DQL knowledge
+- **Custom Agents Guide**: See [.github/agents/README.md](.github/agents/README.md) - How to use and create custom agents
+
+### Portfolio & Hiring
+- **Executive Hiring Video System**: See [docs/video-portfolio/](docs/video-portfolio/) - Complete system for creating a 3-5 minute portfolio video for non-technical executives
+  - Transform this repository into a compelling hiring pitch
+  - Includes script, visuals, production guide, and translation glossary
+  - Designed for decision-makers who don't read code
+
+## 🔒 Security
+
+- **Zero Vulnerabilities** - All dependencies audited and updated
+- **Type Safety** - Comprehensive TypeScript coverage
+- **Input Validation** - Zod schema validation
+- **Security Agent** - Automated vulnerability scanning
+- **Regular Audits** - Continuous security monitoring
 
 ## 🛠️ Development
 
