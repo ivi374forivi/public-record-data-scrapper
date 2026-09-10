@@ -15,6 +15,7 @@ interface NJScraperConfig {
   apiKey?: string
   accountId?: string
   debtorSeeds?: string[]
+  requestTimeoutMs?: number
 }
 
 interface NJPortalRecord {
@@ -27,12 +28,18 @@ interface NJPortalRecord {
   collateral?: string
 }
 
+const njRateLimiter = new RateLimiter({
+  requestsPerMinute: 6,
+  requestsPerHour: 180,
+  requestsPerDay: 1500
+})
+
 export class NJScraperCollector implements StateCollector {
   private readonly portalUrl: string
   private readonly apiKey: string
   private readonly accountId: string
   private readonly debtorSeeds: string[]
-  private readonly rateLimiter: RateLimiter
+  private readonly requestTimeoutMs: number
   private readonly stats = {
     totalCollected: 0,
     totalErrors: 0,
@@ -48,12 +55,7 @@ export class NJScraperCollector implements StateCollector {
     this.debtorSeeds = (config.debtorSeeds ?? [])
       .map((seed) => seed.trim())
       .filter((seed) => seed.length > 0)
-
-    this.rateLimiter = new RateLimiter({
-      requestsPerMinute: 6,
-      requestsPerHour: 180,
-      requestsPerDay: 1500
-    })
+    this.requestTimeoutMs = config.requestTimeoutMs ?? 30_000
   }
 
   isReady(): boolean {
@@ -108,7 +110,12 @@ export class NJScraperCollector implements StateCollector {
     for (const seed of this.debtorSeeds) {
       if (unique.size >= limit) break
       const result = await this.searchByBusinessName(seed)
-      for (const filing of result.filings) {
+      const filings = result.filings
+        .filter((filing) => !options.since || filing.filingDate >= options.since.toISOString())
+        .filter((filing) => options.includeInactive !== false || filing.status === 'active')
+        .filter((filing) => !options.filingTypes || options.filingTypes.includes(filing.filingType))
+
+      for (const filing of filings) {
         if (!unique.has(filing.filingNumber)) {
           unique.set(filing.filingNumber, filing)
         }
@@ -132,7 +139,7 @@ export class NJScraperCollector implements StateCollector {
   }
 
   getStatus(): CollectorStatus {
-    const rate = this.rateLimiter.getStats()
+    const rate = njRateLimiter.getStats()
     return {
       isHealthy: this.isReady() && this.stats.totalErrors === 0,
       lastCollectionTime: this.stats.lastCollectionTime,
@@ -162,10 +169,12 @@ export class NJScraperCollector implements StateCollector {
       )
     }
 
-    await this.rateLimiter.acquire()
+    await njRateLimiter.acquire()
     this.stats.totalRequests++
 
     const startTime = Date.now()
+    const controller = new AbortController()
+    const timeout = setTimeout(() => controller.abort(), this.requestTimeoutMs)
     try {
       const response = await fetch(this.portalUrl, {
         method: 'POST',
@@ -178,7 +187,8 @@ export class NJScraperCollector implements StateCollector {
         body: JSON.stringify({
           debtorName: name || undefined,
           filingNumber: filingNumber || undefined
-        })
+        }),
+        signal: controller.signal
       })
 
       if (!response.ok) {
@@ -211,10 +221,23 @@ export class NJScraperCollector implements StateCollector {
         throw new CollectionError('NJ', 'PARSE', false, 'NJ portal payload is not an array')
       }
 
-      return payload as NJPortalRecord[]
+      const records = payload.filter(isNJPortalRecord)
+      if (records.length !== payload.length) {
+        throw new CollectionError(
+          'NJ',
+          'PARSE',
+          false,
+          'NJ portal payload contains malformed filing records'
+        )
+      }
+
+      return records
     } catch (error) {
       this.stats.totalErrors++
       if (error instanceof CollectionError) throw error
+      if (error instanceof DOMException && error.name === 'AbortError') {
+        throw new CollectionError('NJ', 'TIMEOUT', true, 'NJ portal request timed out')
+      }
       throw new CollectionError(
         'NJ',
         'NETWORK',
@@ -222,6 +245,7 @@ export class NJScraperCollector implements StateCollector {
         `NJ portal request failed: ${error instanceof Error ? error.message : 'unknown error'}`
       )
     } finally {
+      clearTimeout(timeout)
       const duration = Date.now() - startTime
       this.stats.latencies.push(duration)
       if (this.stats.latencies.length > 100) this.stats.latencies.shift()
@@ -229,10 +253,8 @@ export class NJScraperCollector implements StateCollector {
   }
 
   private mapRecord(record: NJPortalRecord): UCCFiling {
-    const debtor: Party = { name: (record.debtorName ?? '').trim() || 'Unknown Debtor' }
-    const securedParty: Party = {
-      name: (record.securedPartyName ?? '').trim() || 'Unknown Secured Party'
-    }
+    const debtor: Party = { name: record.debtorName!.trim() }
+    const securedParty: Party = { name: record.securedPartyName!.trim() }
 
     return {
       filingNumber: (record.filingNumber ?? '').trim(),
@@ -254,6 +276,21 @@ export class NJScraperCollector implements StateCollector {
     if (normalized.includes('amend')) return 'amended'
     return 'active'
   }
+}
+
+function isNJPortalRecord(value: unknown): value is NJPortalRecord {
+  if (!value || typeof value !== 'object') return false
+  const record = value as NJPortalRecord
+  return Boolean(
+    typeof record.filingNumber === 'string' &&
+    record.filingNumber.trim() &&
+    typeof record.filingDate === 'string' &&
+    record.filingDate.trim() &&
+    typeof record.debtorName === 'string' &&
+    record.debtorName.trim() &&
+    typeof record.securedPartyName === 'string' &&
+    record.securedPartyName.trim()
+  )
 }
 
 function parseDebtorSeeds(raw: string | undefined): string[] {

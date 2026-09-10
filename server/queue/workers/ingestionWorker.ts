@@ -14,6 +14,7 @@ import { createCAApiCollector } from '../../../apps/web/src/lib/collectors/state
 import { createTXBulkCollector } from '../../../apps/web/src/lib/collectors/state-collectors/TXBulkCollector'
 import { createFLVendorCollector } from '../../../apps/web/src/lib/collectors/state-collectors/FLVendorCollector'
 import { createNYScraperCollector } from '../../../apps/web/src/lib/collectors/state-collectors/NYScraperCollector'
+import { createNJScraperCollector } from '../../../apps/web/src/lib/collectors/state-collectors/NJScraperCollector'
 import {
   evaluateIngestionRecoveryAction,
   getIngestionQueue,
@@ -327,6 +328,15 @@ function resolveCollectorForJob(
       if (!collector || !collector.isReady()) {
         throw new NonRetryableIngestionError(
           'NY scraper collector is not ready because no debtor seeds are configured (set NY_UCC_DEBTOR_SEEDS).'
+        )
+      }
+      return collector
+    }
+    case 'NJ:scrape': {
+      const collector = createNJScraperCollector()
+      if (!collector || !collector.isReady()) {
+        throw new NonRetryableIngestionError(
+          'NJ scraper collector is not ready because credentials or debtor seeds are not configured.'
         )
       }
       return collector

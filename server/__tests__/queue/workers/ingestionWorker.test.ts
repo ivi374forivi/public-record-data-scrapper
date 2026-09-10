@@ -63,6 +63,7 @@ const mocks = vi.hoisted(() => {
     mockCreateTXBulkCollector: vi.fn(),
     mockCreateFLVendorCollector: vi.fn(),
     mockCreateNYScraperCollector: vi.fn(),
+    mockCreateNJScraperCollector: vi.fn(),
     mockCACollector: createCollector(),
     mockTXCollector: createCollector(),
     mockFLCollector: {
@@ -70,6 +71,10 @@ const mocks = vi.hoisted(() => {
       isReady: vi.fn(() => true)
     },
     mockNYCollector: {
+      ...createCollector(),
+      isReady: vi.fn(() => true)
+    },
+    mockNJCollector: {
       ...createCollector(),
       isReady: vi.fn(() => true)
     }
@@ -128,6 +133,10 @@ vi.mock('../../../../apps/web/src/lib/collectors/state-collectors/FLVendorCollec
 
 vi.mock('../../../../apps/web/src/lib/collectors/state-collectors/NYScraperCollector', () => ({
   createNYScraperCollector: mocks.mockCreateNYScraperCollector
+}))
+
+vi.mock('../../../../apps/web/src/lib/collectors/state-collectors/NJScraperCollector', () => ({
+  createNJScraperCollector: mocks.mockCreateNJScraperCollector
 }))
 
 function createFiling(overrides: Partial<Record<string, any>> = {}) {

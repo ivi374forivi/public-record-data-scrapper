@@ -194,7 +194,10 @@ const STATE_STRATEGY_PROFILES: Partial<Record<string, IngestionStrategy[]>> = {
   FL: ['vendor'],
   // NY portal supports per-debtor search only; the scrape collector iterates
   // NY_UCC_DEBTOR_SEEDS and relies on external_id upsert dedupe.
-  NY: ['scrape']
+  NY: ['scrape'],
+  // NJ portal supports authenticated per-debtor search only; the collector
+  // iterates NJ_UCC_DEBTOR_SEEDS and rejects unverified records.
+  NJ: ['scrape']
 }
 
 function resolveTimestamp(timestamp?: string): string {
