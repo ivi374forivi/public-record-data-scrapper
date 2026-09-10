@@ -32,6 +32,8 @@ export interface DataSourceResponse<T = unknown> {
   responseTime: number
 }
 
+const JSON_CONTENT_TYPE_PATTERN = /^(?:application\/json|[^/\s;]+\/[^/\s;]+\+json)(?:\s*;|$)/i
+
 export abstract class BaseDataSource {
   protected config: DataSourceConfig
 
@@ -51,7 +53,7 @@ export abstract class BaseDataSource {
 
   protected async parseJsonResponse<T>(response: Response): Promise<T> {
     const contentType = response.headers?.get?.('content-type') ?? ''
-    if (contentType && !contentType.toLowerCase().includes('application/json')) {
+    if (contentType && !JSON_CONTENT_TYPE_PATTERN.test(contentType.trim())) {
       throw new Error(
         `Non-JSON response from ${this.config.name} (${contentType || 'unknown content type'})`
       )
@@ -110,8 +112,12 @@ export abstract class BaseDataSource {
       } catch (error) {
         lastError = error as Error
 
-        // Don't retry on validation errors.
-        if (error instanceof Error && error.message.includes('Invalid')) {
+        // Don't retry on response validation errors.
+        if (
+          error instanceof Error &&
+          (error.message.includes('Invalid JSON response') ||
+            error.message.includes('Non-JSON response'))
+        ) {
           break
         }
 
