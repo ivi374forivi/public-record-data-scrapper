@@ -22,7 +22,8 @@
 - **CPU**: 2 cores
 - **RAM**: 4GB
 - **Storage**: 20GB SSD
-- **Node.js**: 20.x LTS
+- **Node.js**: 24.19.0
+- **npm**: 11.9.0
 - **PostgreSQL**: 14+
 
 ### Recommended Requirements (Production)
@@ -30,7 +31,8 @@
 - **CPU**: 8+ cores
 - **RAM**: 16GB+
 - **Storage**: 100GB+ SSD (NVMe preferred)
-- **Node.js**: 20.x LTS
+- **Node.js**: 24.19.0
+- **npm**: 11.9.0
 - **PostgreSQL**: 14+ with 50GB+ storage
 - **Redis**: 7+ (for caching)
 - **Load Balancer**: Nginx or similar
@@ -258,14 +260,14 @@ pm2 stop ucc-app
 
 ```dockerfile
 # Dockerfile
-FROM node:20-alpine AS builder
+FROM node:24-alpine AS builder
 WORKDIR /app
 COPY package*.json ./
 RUN npm ci
 COPY . .
 RUN npm run build
 
-FROM node:20-alpine
+FROM node:24-alpine
 WORKDIR /app
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/node_modules ./node_modules
