@@ -2,9 +2,9 @@ name: ESLint code scanning
 
 on:
   push:
-    branches: [ "main" ]
+    branches: ['main']
   pull_request:
-    branches: [ "main" ]
+    branches: ['main']
   schedule:
     - cron: '16 23 * * 0'
 
@@ -15,7 +15,6 @@ permissions:
 jobs:
   lint-and-upload:
     runs-on: ubuntu-latest
-    continue-on-error: true
     env:
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
@@ -35,9 +34,11 @@ jobs:
           set -euo pipefail
           npm ci
       - name: Run ESLint with SARIF output
+        id: eslint
+        continue-on-error: true
         run: |
           set -euo pipefail
-          npx eslint . --ext .js,.jsx,.ts,.tsx --format sarif --output-file results.sarif || true
+          npx eslint . --ext .js,.jsx,.ts,.tsx --format sarif --output-file results.sarif
       - name: Upload SARIF results via API
         env:
           REF: ${{ github.ref }}
@@ -57,3 +58,8 @@ jobs:
             -H "Accept: application/vnd.github+json" \
             -X POST "https://api.github.com/repos/${REPO}/code-scanning/sarifs" \
             --data @payload.json
+      - name: Fail on ESLint findings
+        if: ${{ steps.eslint.outcome == 'failure' }}
+        run: |
+          echo "::error::ESLint reported findings; see the uploaded SARIF result."
+          exit 1

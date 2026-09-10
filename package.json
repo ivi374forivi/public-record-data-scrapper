@@ -3,6 +3,10 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
+  "engines": {
+    "node": "24.19.0",
+    "npm": "11.9.0"
+  },
   "scripts": {
     "dev": "npm --workspace apps/web run dev",
     "dev:server": "tsx --watch server/index.ts",
