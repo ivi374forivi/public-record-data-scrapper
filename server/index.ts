@@ -138,10 +138,17 @@ export class Server {
   }
 
   private setupRoutes(): void {
+    // Public routes have no authenticated entitlement context, so resolve them
+    // explicitly as free-tier and expose that decision on every response. Keep
+    // these mounts path-scoped: mounting dataTierRouter globally would run
+    // before auth and incorrectly freeze protected requests at free-tier.
+    this.app.use('/api/docs', dataTierRouter)
+
     // Swagger UI documentation
     this.setupSwaggerDocs()
 
     // Public status page (no auth, bookmarkable)
+    this.app.use('/status', dataTierRouter)
     this.app.use(statusRouter)
 
     // Public routes (no authentication required). dataTierRouter resolves
@@ -150,15 +157,15 @@ export class Server {
     this.app.use('/api/health', dataTierRouter, healthRouter)
 
     // Webhook routes (signature verification, no JWT auth)
-    this.app.use('/api/webhooks', webhooksRouter)
+    this.app.use('/api/webhooks', dataTierRouter, webhooksRouter)
 
     // Metrics (self-protecting: valid JWT OR METRICS_TOKEN; 401 when neither —
     // must NOT sit behind the global authMiddleware or the token scrape path breaks)
-    this.app.use('/api/metrics', metricsRouter)
+    this.app.use('/api/metrics', dataTierRouter, metricsRouter)
 
     // Billing routes (Stripe). The webhook is authenticated via Stripe signature
     // verification on the raw body (mounted above), not JWT.
-    this.app.use('/api/billing', billingRouter)
+    this.app.use('/api/billing', dataTierRouter, billingRouter)
 
     // Protected API routes (authentication required).
     // orgContextMiddleware runs AFTER authMiddleware (so req.user.orgId is
@@ -168,20 +175,92 @@ export class Server {
     // entitlement from req.user (tier claim, then the org's subscription_tier),
     // so mounted pre-auth it always failed closed to free-tier — which silently
     // applied the free-tier min-score floor to every authenticated caller.
-    this.app.use('/api/prospects', authMiddleware, orgContextMiddleware, dataTierRouter, prospectsRouter)
-    this.app.use('/api/competitors', authMiddleware, orgContextMiddleware, dataTierRouter, competitorsRouter)
-    this.app.use('/api/portfolio', authMiddleware, orgContextMiddleware, dataTierRouter, portfolioRouter)
-    this.app.use('/api/enrichment', authMiddleware, orgContextMiddleware, dataTierRouter, enrichmentRouter)
+    this.app.use(
+      '/api/prospects',
+      authMiddleware,
+      orgContextMiddleware,
+      dataTierRouter,
+      prospectsRouter
+    )
+    this.app.use(
+      '/api/competitors',
+      authMiddleware,
+      orgContextMiddleware,
+      dataTierRouter,
+      competitorsRouter
+    )
+    this.app.use(
+      '/api/portfolio',
+      authMiddleware,
+      orgContextMiddleware,
+      dataTierRouter,
+      portfolioRouter
+    )
+    this.app.use(
+      '/api/enrichment',
+      authMiddleware,
+      orgContextMiddleware,
+      dataTierRouter,
+      enrichmentRouter
+    )
     this.app.use('/api/jobs', authMiddleware, orgContextMiddleware, dataTierRouter, jobsRouter)
-    this.app.use('/api/contacts', authMiddleware, orgContextMiddleware, dataTierRouter, contactsRouter)
+    this.app.use(
+      '/api/contacts',
+      authMiddleware,
+      orgContextMiddleware,
+      dataTierRouter,
+      contactsRouter
+    )
     this.app.use('/api/deals', authMiddleware, orgContextMiddleware, dataTierRouter, dealsRouter)
-    this.app.use('/api/competitive', authMiddleware, orgContextMiddleware, dataTierRouter, competitiveRouter)
-    this.app.use('/api/outreach', authMiddleware, orgContextMiddleware, dataTierRouter, outreachRouter)
-    this.app.use('/api/communications', authMiddleware, orgContextMiddleware, dataTierRouter, communicationsRouter)
-    this.app.use('/api/compliance', authMiddleware, orgContextMiddleware, dataTierRouter, complianceRouter)
-    this.app.use('/api/discovery', authMiddleware, orgContextMiddleware, dataTierRouter, discoveryRouter)
-    this.app.use('/api/agentic', authMiddleware, orgContextMiddleware, dataTierRouter, agenticRouter)
-    this.app.use('/api/underwriting', authMiddleware, orgContextMiddleware, dataTierRouter, underwritingRouter)
+    this.app.use(
+      '/api/competitive',
+      authMiddleware,
+      orgContextMiddleware,
+      dataTierRouter,
+      competitiveRouter
+    )
+    this.app.use(
+      '/api/outreach',
+      authMiddleware,
+      orgContextMiddleware,
+      dataTierRouter,
+      outreachRouter
+    )
+    this.app.use(
+      '/api/communications',
+      authMiddleware,
+      orgContextMiddleware,
+      dataTierRouter,
+      communicationsRouter
+    )
+    this.app.use(
+      '/api/compliance',
+      authMiddleware,
+      orgContextMiddleware,
+      dataTierRouter,
+      complianceRouter
+    )
+    this.app.use(
+      '/api/discovery',
+      authMiddleware,
+      orgContextMiddleware,
+      dataTierRouter,
+      discoveryRouter
+    )
+    this.app.use(
+      '/api/agentic',
+      authMiddleware,
+      orgContextMiddleware,
+      dataTierRouter,
+      agenticRouter
+    )
+    this.app.use(
+      '/api/underwriting',
+      authMiddleware,
+      orgContextMiddleware,
+      dataTierRouter,
+      underwritingRouter
+    )
     // API key management (JWT + admin only - API keys must not be able to mint more keys)
     this.app.use(
       '/api/keys',
@@ -196,7 +275,7 @@ export class Server {
     this.app.use('/api/scrape', apiKeyOrJwtAuth, dataTierRouter, scrapeRouter)
 
     // Root endpoint
-    this.app.get('/', (req, res) => {
+    this.app.get('/', dataTierRouter, (req, res) => {
       res.json({
         name: 'UCC-MCA Intelligence API',
         version: '1.0.0',

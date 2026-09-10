@@ -219,7 +219,7 @@ export class JobScheduler {
     const ingestionQueue = getIngestionQueue()
 
     // Get list of states to scrape (from config or database)
-    const states = ['NY', 'CA', 'TX', 'FL', 'IL', 'PA', 'OH', 'GA', 'NC', 'MI']
+    const states = ['NY', 'NJ', 'CA', 'TX', 'FL', 'IL', 'PA', 'OH', 'GA', 'NC', 'MI']
     const dataTier = 'free-tier'
     const uccProvider = resolveUccProvider(dataTier)
     let queuedStates = 0

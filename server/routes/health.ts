@@ -107,6 +107,25 @@ function getImplementationBlueprint(stateCode: string): ImplementationBlueprint 
           'NY has portal-search code, but no production-ready incremental ingestion collector is wired yet.'
         ]
       }
+    case 'NJ': {
+      const hasCredentials = Boolean(
+        process.env.NJ_UCC_API_KEY?.trim() &&
+        process.env.NJ_UCC_ACCOUNT_ID?.trim() &&
+        process.env.NJ_UCC_DEBTOR_SEEDS?.split(',').some((seed) => seed.trim())
+      )
+      return {
+        primaryStrategy: 'scrape',
+        availableStrategies: hasCredentials ? ['scrape'] : [],
+        readiness: hasCredentials ? 'operational' : 'blocked',
+        notes: hasCredentials
+          ? [
+              'NJ UCC portal collector is credentialed and debtor-seed configured for scheduled ingestion.'
+            ]
+          : [
+              'NJ UCC portal collector is implemented but requires NJ_UCC_API_KEY, NJ_UCC_ACCOUNT_ID, and NJ_UCC_DEBTOR_SEEDS.'
+            ]
+      }
+    }
     default:
       return undefined
   }

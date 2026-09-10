@@ -169,7 +169,7 @@ describe('Health Routes', () => {
         overallStatus: 'red',
         summary: {
           totalStates: 50,
-          implementedStates: 4,
+          implementedStates: 5,
           greenStates: 0,
           yellowStates: 0,
           redStates: 50
@@ -208,6 +208,13 @@ describe('Health Routes', () => {
         // it stays red until NY_UCC_DEBTOR_SEEDS is configured.
         scheduled: true,
         isHighValue: true
+      })
+      expect(stateIndex.NJ).toMatchObject({
+        status: 'red',
+        primaryStrategy: 'scrape',
+        scheduled: true,
+        implemented: true,
+        isHighValue: false
       })
     })
 
