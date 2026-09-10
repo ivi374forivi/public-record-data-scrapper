@@ -56,6 +56,11 @@ describe('StateCollectorFactory', () => {
       expect(collector).toBeUndefined()
     })
 
+    it('should fail closed for credential-gated NJ without credentials and seeds', () => {
+      const collector = factory.getCollector('NJ')
+      expect(collector).toBeUndefined()
+    })
+
     it('should return undefined for unimplemented state', () => {
       const collector = factory.getCollector('IL')
       expect(collector).toBeUndefined()
@@ -136,12 +141,13 @@ describe('StateCollectorFactory', () => {
     it('should list all implemented states including those needing config', () => {
       const implemented = factory.getImplementedStates()
 
-      // CA, TX, FL, NY all have collector implementations. FL and NY are
+      // CA, TX, FL, NY, NJ all have collector implementations. FL, NY, and NJ are
       // credential-gated (active contract / NY_UCC_DEBTOR_SEEDS) and fail closed
       // when unconfigured, but they are still "implemented" — the collection
       // code exists and is tested.
-      expect(implemented.length).toBe(4) // CA, TX, FL, NY
+      expect(implemented.length).toBe(5) // CA, TX, FL, NY, NJ
       expect(implemented).toContain('NY')
+      expect(implemented).toContain('NJ')
       expect(implemented).toContain('CA')
       expect(implemented).toContain('TX')
       expect(implemented).toContain('FL')
@@ -242,18 +248,19 @@ describe('StateCollectorFactory', () => {
     it('should track implemented states', () => {
       const stats = factory.getStats()
 
-      expect(stats.implemented).toBe(4) // CA, TX, FL, NY
+      expect(stats.implemented).toBe(5) // CA, TX, FL, NY, NJ
       expect(stats.implementedStates).toContain('CA')
       expect(stats.implementedStates).toContain('TX')
       expect(stats.implementedStates).toContain('FL')
       expect(stats.implementedStates).toContain('NY')
+      expect(stats.implementedStates).toContain('NJ')
     })
 
     it('should track pending states', () => {
       const stats = factory.getStats()
 
-      expect(stats.pending).toBe(47) // 51 - 4
-      expect(stats.pendingStates.length).toBe(47)
+      expect(stats.pending).toBe(46) // 51 - 5
+      expect(stats.pendingStates.length).toBe(46)
     })
   })
 
