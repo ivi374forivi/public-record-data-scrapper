@@ -26,8 +26,13 @@ afterEach(() => {
   vi.unstubAllGlobals()
 })
 
-function okJson(body: unknown) {
-  return { ok: true, statusText: 'OK', json: async () => body }
+function okJson(body: unknown, contentType = 'application/json') {
+  return {
+    ok: true,
+    statusText: 'OK',
+    headers: new Headers({ 'content-type': contentType }),
+    json: async () => body
+  }
 }
 
 describe('SAMGovSource', () => {
@@ -130,6 +135,27 @@ describe('ClearbitSource', () => {
 
     expect(res.success).toBe(true)
     expect(res.data).toMatchObject({ industry: 'Software', employeeCount: 50, foundedYear: 2011 })
+  })
+
+  it('accepts application/vnd.api+json responses', async () => {
+    const source = new ClearbitSource('cb-key')
+    fetchMock.mockResolvedValue(
+      okJson(
+        {
+          name: 'Acme Co',
+          domain: 'acme.co',
+          category: { industry: 'Software', sector: 'Information Technology' },
+          metrics: { employees: 50, estimatedAnnualRevenue: '$1M-$10M' },
+          foundedYear: 2011
+        },
+        'application/vnd.api+json'
+      )
+    )
+
+    const res = await source.fetchData({ companyName: 'Acme Co' })
+
+    expect(res.success).toBe(true)
+    expect(res.data).toMatchObject({ name: 'Acme Co', domain: 'acme.co' })
   })
 })
 
