@@ -16,6 +16,7 @@ import { createCAApiCollector } from './state-collectors/CAApiCollector'
 import { createTXBulkCollector } from './state-collectors/TXBulkCollector'
 import { createFLVendorCollector } from './state-collectors/FLVendorCollector'
 import { createNYScraperCollector } from './state-collectors/NYScraperCollector'
+import { createNJScraperCollector } from './state-collectors/NJScraperCollector'
 
 /**
  * Access method types for state data
@@ -158,6 +159,25 @@ const STATE_CONFIGS: Record<string, StateConfig> = {
       'the collector reports isReady()=false and is withheld (fail-closed). The ' +
       'portal has no bulk/date-windowed query, so collection is seed-enumeration ' +
       'based. Live-portal extraction is implemented but pending production verification.'
+  },
+  NJ: {
+    code: 'NJ',
+    name: 'New Jersey',
+    accessMethods: ['scrape'],
+    activeMethod: 'scrape',
+    hasApi: false,
+    hasBulk: false,
+    requiresVendor: false,
+    costPer1000Queries: {
+      api: null,
+      bulk: null,
+      vendor: null,
+      scrape: 0
+    },
+    notes:
+      'NJ UCC portal integration is credential-gated (NJ_UCC_API_KEY + ' +
+      'NJ_UCC_ACCOUNT_ID + NJ_UCC_DEBTOR_SEEDS). Collector fails closed when ' +
+      'unconfigured and rejects HTML-as-200 portal responses.'
   }
 }
 
@@ -192,7 +212,8 @@ const COLLECTOR_BUILDERS: Record<string, CollectorBuilder> = {
   CA: { method: 'api', build: () => createCAApiCollector() ?? undefined },
   TX: { method: 'bulk', build: () => createTXBulkCollector() ?? undefined },
   FL: { method: 'vendor', build: () => whenReady(createFLVendorCollector()) },
-  NY: { method: 'scrape', build: () => whenReady(createNYScraperCollector()) }
+  NY: { method: 'scrape', build: () => whenReady(createNYScraperCollector()) },
+  NJ: { method: 'scrape', build: () => whenReady(createNJScraperCollector()) }
 }
 
 /**
