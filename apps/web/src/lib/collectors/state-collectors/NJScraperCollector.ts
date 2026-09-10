@@ -111,7 +111,7 @@ export class NJScraperCollector implements StateCollector {
       if (unique.size >= limit) break
       const result = await this.searchByBusinessName(seed)
       const filings = result.filings
-        .filter((filing) => !options.since || filing.filingDate >= options.since.toISOString())
+        .filter((filing) => !options.since || isOnOrAfterSince(filing.filingDate, options.since))
         .filter((filing) => options.includeInactive !== false || filing.status === 'active')
         .filter((filing) => !options.filingTypes || options.filingTypes.includes(filing.filingType))
 
@@ -291,6 +291,10 @@ function isNJPortalRecord(value: unknown): value is NJPortalRecord {
     typeof record.securedPartyName === 'string' &&
     record.securedPartyName.trim()
   )
+}
+
+function isOnOrAfterSince(filingDate: string, since: Date): boolean {
+  return filingDate.slice(0, 10) >= since.toISOString().slice(0, 10)
 }
 
 function parseDebtorSeeds(raw: string | undefined): string[] {

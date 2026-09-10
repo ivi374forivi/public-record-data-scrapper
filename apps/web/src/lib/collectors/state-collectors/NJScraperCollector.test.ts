@@ -59,7 +59,7 @@ describe('NJScraperCollector', () => {
         JSON.stringify([
           {
             filingNumber: 'NJ-1',
-            filingDate: '2026-09-01',
+            filingDate: '2026-08-15',
             filingType: 'UCC-1',
             status: 'active',
             debtorName: 'Atlas Supply LLC',

@@ -38,12 +38,14 @@ const mocks = vi.hoisted(() => {
       if (state === 'CA') return 'api'
       if (state === 'TX') return 'bulk'
       if (state === 'FL') return 'vendor'
+      if (state === 'NJ') return 'scrape'
       return null
     }),
     mockResolveStateIngestionStrategyChain: vi.fn((state: string) => {
       if (state === 'CA') return ['api']
       if (state === 'TX') return ['bulk']
       if (state === 'FL') return ['vendor']
+      if (state === 'NJ') return ['scrape']
       return []
     })
   }
@@ -202,7 +204,7 @@ describeConditional('JobScheduler', () => {
       // Access private method via type casting for testing
       await (scheduler as any).scheduleUCCIngestion()
 
-      expect(mocks.mockQueueAdd).toHaveBeenCalledTimes(3)
+      expect(mocks.mockQueueAdd).toHaveBeenCalledTimes(4)
     })
 
     it('should queue jobs with correct supported state codes', async () => {
@@ -211,7 +213,7 @@ describeConditional('JobScheduler', () => {
 
       await (scheduler as any).scheduleUCCIngestion()
 
-      const expectedStates = ['CA', 'TX', 'FL']
+      const expectedStates = ['NJ', 'CA', 'TX', 'FL']
 
       expectedStates.forEach((state) => {
         expect(mocks.mockQueueAdd).toHaveBeenCalledWith(
@@ -241,8 +243,8 @@ describeConditional('JobScheduler', () => {
 
       await (scheduler as any).scheduleUCCIngestion()
 
-      expect(consoleSpy).toHaveBeenCalledWith('[Scheduler] Queueing UCC ingestion for 10 states')
-      expect(consoleSpy).toHaveBeenCalledWith('[Scheduler] Queued 3 ingestion jobs')
+      expect(consoleSpy).toHaveBeenCalledWith('[Scheduler] Queueing UCC ingestion for 11 states')
+      expect(consoleSpy).toHaveBeenCalledWith('[Scheduler] Queued 4 ingestion jobs')
     })
 
     it('records telemetry when jobs are queued', async () => {
@@ -251,7 +253,7 @@ describeConditional('JobScheduler', () => {
 
       await (scheduler as any).scheduleUCCIngestion()
 
-      expect(mocks.mockRecordIngestionQueued).toHaveBeenCalledTimes(3)
+      expect(mocks.mockRecordIngestionQueued).toHaveBeenCalledTimes(4)
       expect(mocks.mockRecordIngestionQueued).toHaveBeenCalledWith(
         expect.objectContaining({
           state: 'CA',
@@ -298,7 +300,7 @@ describeConditional('JobScheduler', () => {
 
       await (scheduler as any).scheduleUCCIngestion()
 
-      expect(mocks.mockQueueAdd).toHaveBeenCalledTimes(2)
+      expect(mocks.mockQueueAdd).toHaveBeenCalledTimes(3)
       expect(mocks.mockQueueAdd).not.toHaveBeenCalledWith(
         'ingest-TX',
         expect.anything(),

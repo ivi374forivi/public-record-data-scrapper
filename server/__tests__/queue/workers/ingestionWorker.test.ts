@@ -194,6 +194,7 @@ describeConditional('Ingestion Worker', () => {
     mocks.mockCreateTXBulkCollector.mockReset().mockReturnValue(mocks.mockTXCollector)
     mocks.mockCreateFLVendorCollector.mockReset().mockReturnValue(mocks.mockFLCollector)
     mocks.mockCreateNYScraperCollector.mockReset().mockReturnValue(mocks.mockNYCollector)
+    mocks.mockCreateNJScraperCollector.mockReset().mockReturnValue(mocks.mockNJCollector)
 
     mocks.mockCACollector.collectNewFilings.mockReset().mockResolvedValue([createFiling()])
     mocks.mockTXCollector.collectNewFilings
@@ -207,6 +208,10 @@ describeConditional('Ingestion Worker', () => {
       .mockReset()
       .mockResolvedValue([createFiling({ filingNumber: 'NY-0001', state: 'NY' })])
     mocks.mockNYCollector.isReady.mockReset().mockReturnValue(true)
+    mocks.mockNJCollector.collectNewFilings
+      .mockReset()
+      .mockResolvedValue([createFiling({ filingNumber: 'NJ-0001', state: 'NJ' })])
+    mocks.mockNJCollector.isReady.mockReset().mockReturnValue(true)
   })
 
   afterEach(() => {
@@ -492,6 +497,66 @@ describeConditional('Ingestion Worker', () => {
         'NY scraper collector is not ready because no debtor seeds are configured (set NY_UCC_DEBTOR_SEEDS).'
       )
       expect(mocks.mockEvaluateIngestionRecoveryAction).not.toHaveBeenCalled()
+    })
+
+    it('resolves the NJ scraper collector for NJ:scrape and persists its filings', async () => {
+      const { createIngestionWorker } = await import('../../../queue/workers/ingestionWorker')
+
+      const worker = createIngestionWorker()
+      const mockJob = {
+        id: 'job-nj-1',
+        data: { state: 'NJ', strategy: 'scrape', dataTier: 'free-tier', batchSize: 500 },
+        updateProgress: mocks.mockUpdateProgress
+      }
+
+      await worker.processor(mockJob as any)
+
+      expect(mocks.mockCreateNJScraperCollector).toHaveBeenCalled()
+      expect(mocks.mockNJCollector.isReady).toHaveBeenCalled()
+      expect(mocks.mockNJCollector.collectNewFilings).toHaveBeenCalledWith({
+        since: undefined,
+        limit: 500,
+        includeInactive: true
+      })
+      expect(mocks.mockDatabaseQuery).toHaveBeenCalledWith(
+        expect.stringContaining('INSERT INTO ucc_filings'),
+        expect.arrayContaining(['NJ:NJ-0001', 'NJ', 'ucc_nj_scrape'])
+      )
+      expect(mocks.mockRecordIngestionCompleted).toHaveBeenCalledWith(
+        expect.objectContaining({ state: 'NJ', strategy: 'scrape', recordsProcessed: 1 })
+      )
+    })
+
+    it('fails closed without self-heal when the NJ collector is not ready', async () => {
+      const { createIngestionWorker } = await import('../../../queue/workers/ingestionWorker')
+
+      mocks.mockNJCollector.isReady.mockReturnValue(false)
+
+      const worker = createIngestionWorker()
+      const mockJob = {
+        id: 'job-nj-2',
+        data: { state: 'NJ', strategy: 'scrape', dataTier: 'free-tier' },
+        updateProgress: mocks.mockUpdateProgress
+      }
+
+      const error = await worker.processor(mockJob as any).catch((caught) => caught)
+
+      expect(error).toBeInstanceOf(Error)
+      expect(error.message).toBe(
+        'NJ scraper collector is not ready because credentials or debtor seeds are not configured.'
+      )
+      expect(mocks.mockNJCollector.collectNewFilings).not.toHaveBeenCalled()
+      expect(mocks.mockEvaluateIngestionRecoveryAction).not.toHaveBeenCalled()
+      expect(mocks.mockRecordCollectorException).toHaveBeenCalledWith(
+        expect.objectContaining({
+          state: 'NJ',
+          strategy: 'scrape',
+          jobId: 'job-nj-2',
+          recoveryAction: 'none',
+          failureCode: 'ucc.collector.not_ready'
+        })
+      )
+      expect(mocks.mockQueueAdd).not.toHaveBeenCalled()
     })
   })
 
