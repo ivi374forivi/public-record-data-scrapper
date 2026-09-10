@@ -23,6 +23,57 @@
 import { BaseDataSource, DataSourceResponse } from './base-source'
 import { readEnv, notConfiguredResponse } from './credentials'
 
+type DnBMatchResponse = {
+  matchCandidates?: Array<{
+    organization?: {
+      duns?: string
+      primaryName?: string
+      dnbAssessment?: {
+        standardRating?: {
+          rating?: string
+        }
+      }
+      numberOfEmployees?: Array<{
+        value?: number
+      }>
+      financials?: Array<{
+        yearlyRevenue?: Array<{
+          value?: number
+        }>
+      }>
+    }
+  }>
+}
+
+type ClearbitCompanyResponse = {
+  name?: string
+  domain?: string
+  category?: {
+    industry?: string
+    sector?: string
+  }
+  metrics?: {
+    employees?: number
+    estimatedAnnualRevenue?: number
+  }
+  foundedYear?: number
+}
+
+type ZoomInfoCompanyResponse = {
+  data?: {
+    result?: Array<{
+      data?: Array<{
+        id?: string
+        name?: string
+        revenue?: number
+        employeeCount?: number
+        industry?: string
+        website?: string
+      }>
+    }>
+  }
+}
+
 /**
  * D&B (Dun & Bradstreet) Direct+ API — business credit & firmographics.
  *
@@ -74,7 +125,7 @@ export class DnBSource extends BaseDataSource {
         throw new Error(`D&B API error: ${response.statusText}`)
       }
 
-      const data = await this.parseJsonResponse(response)
+      const data = await this.parseJsonResponse<DnBMatchResponse>(response)
       const match = data?.matchCandidates?.[0]?.organization ?? null
 
       return {
@@ -144,7 +195,7 @@ export class ClearbitSource extends BaseDataSource {
         throw new Error(`Clearbit API error: ${response.statusText}`)
       }
 
-      const data = await this.parseJsonResponse(response)
+      const data = await this.parseJsonResponse<ClearbitCompanyResponse>(response)
 
       return {
         name: data?.name ?? null,
@@ -222,7 +273,7 @@ export class ZoomInfoSource extends BaseDataSource {
         throw new Error(`ZoomInfo API error: ${response.statusText}`)
       }
 
-      const data = await this.parseJsonResponse(response)
+      const data = await this.parseJsonResponse<ZoomInfoCompanyResponse>(response)
       const company = data?.data?.result?.[0]?.data?.[0] ?? null
 
       return {

@@ -48,13 +48,13 @@ export class SECEdgarSource extends BaseDataSource {
         throw new Error(`SEC API error: ${response.statusText}`)
       }
 
-      const data = (await this.parseJsonResponse(response)) as {
+      const data = await this.parseJsonResponse<{
         cik?: string
         name?: string
         sic?: string
         stateOfIncorporation?: string
         filings?: unknown[]
-      }
+      }>(response)
 
       return {
         cik: data.cik || null,
@@ -151,10 +151,10 @@ export class USPTOSource extends BaseDataSource {
         throw new Error(`USPTO API error: ${response.statusText}`)
       }
 
-      const data = (await this.parseJsonResponse(response)) as {
+      const data = await this.parseJsonResponse<{
         count?: number
         results?: unknown[]
-      }
+      }>(response)
 
       return {
         trademarkCount: data.count || 0,
@@ -269,7 +269,7 @@ export class SAMGovSource extends BaseDataSource {
         throw new Error(`SAM.gov API error: ${response.statusText}`)
       }
 
-      const data = (await this.parseJsonResponse(response)) as {
+      const data = await this.parseJsonResponse<{
         totalRecords?: number
         entityData?: Array<{
           entityRegistration?: {
@@ -278,10 +278,10 @@ export class SAMGovSource extends BaseDataSource {
           }
           contractCount?: number
         }>
-      }
+      }>(response)
 
       return {
-        isRegistered: data.totalRecords > 0,
+        isRegistered: (data.totalRecords ?? 0) > 0,
         uei: data.entityData?.[0]?.entityRegistration?.ueiSAM || null,
         cageCode: data.entityData?.[0]?.entityRegistration?.cageCode || null,
         contractCount: data.entityData?.[0]?.contractCount || 0,

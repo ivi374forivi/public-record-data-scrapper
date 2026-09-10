@@ -49,7 +49,7 @@ export abstract class BaseDataSource {
    */
   protected abstract validateQuery(query: Record<string, unknown>): boolean
 
-  protected async parseJsonResponse(response: Response): Promise<unknown> {
+  protected async parseJsonResponse<T>(response: Response): Promise<T> {
     const contentType = response.headers?.get?.('content-type') ?? ''
     if (contentType && !contentType.toLowerCase().includes('application/json')) {
       throw new Error(
@@ -58,7 +58,7 @@ export abstract class BaseDataSource {
     }
 
     try {
-      return await response.json()
+      return (await response.json()) as T
     } catch {
       throw new Error(`Invalid JSON response from ${this.config.name}`)
     }
