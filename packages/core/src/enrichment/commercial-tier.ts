@@ -74,7 +74,7 @@ export class DnBSource extends BaseDataSource {
         throw new Error(`D&B API error: ${response.statusText}`)
       }
 
-      const data = await response.json()
+      const data = await this.parseJsonResponse(response)
       const match = data?.matchCandidates?.[0]?.organization ?? null
 
       return {
@@ -144,7 +144,7 @@ export class ClearbitSource extends BaseDataSource {
         throw new Error(`Clearbit API error: ${response.statusText}`)
       }
 
-      const data = await response.json()
+      const data = await this.parseJsonResponse(response)
 
       return {
         name: data?.name ?? null,
@@ -222,7 +222,7 @@ export class ZoomInfoSource extends BaseDataSource {
         throw new Error(`ZoomInfo API error: ${response.statusText}`)
       }
 
-      const data = await response.json()
+      const data = await this.parseJsonResponse(response)
       const company = data?.data?.result?.[0]?.data?.[0] ?? null
 
       return {

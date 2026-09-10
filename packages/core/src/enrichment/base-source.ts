@@ -49,6 +49,21 @@ export abstract class BaseDataSource {
    */
   protected abstract validateQuery(query: Record<string, unknown>): boolean
 
+  protected async parseJsonResponse(response: Response): Promise<unknown> {
+    const contentType = response.headers?.get?.('content-type') ?? ''
+    if (contentType && !contentType.toLowerCase().includes('application/json')) {
+      throw new Error(
+        `Non-JSON response from ${this.config.name} (${contentType || 'unknown content type'})`
+      )
+    }
+
+    try {
+      return await response.json()
+    } catch {
+      throw new Error(`Invalid JSON response from ${this.config.name}`)
+    }
+  }
+
   /**
    * Execute fetch with rate limiting, retries, and timeout.
    */
