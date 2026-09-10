@@ -106,15 +106,88 @@ jobs:
           test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
           test "$(gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/main" --jq .object.sha)" = "$GITHUB_SHA"
       - name: Provision or reuse dedicated staging resources
+        id: provision_staging
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-        run: python3 scripts/provision-cloudflare-staging.py --apply
+        run: |
+          status=0
+          python3 scripts/provision-cloudflare-staging.py --apply || status=$?
+          echo "exit_status=$status" >> "$GITHUB_OUTPUT"
+      - name: Classify provisioning result
+        id: provision_result
+        run: |
+          python3 - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+
+          report_path = Path("cloudflare/.generated/staging-provisioning.json")
+          if not report_path.is_file():
+              raise SystemExit("missing staging provisioning receipt")
+
+          report = json.loads(report_path.read_text())
+          status = report.get("status")
+          blocker = report.get("blocker", {})
+          code = blocker.get("code")
+          operation = blocker.get("operation")
+          http_status = blocker.get("http_status")
+          error_codes = blocker.get("error_codes", [])
+
+          github_output = Path(os.environ["GITHUB_OUTPUT"])
+          github_summary = Path(os.environ["GITHUB_STEP_SUMMARY"])
+
+          def write_output(name, value):
+              with github_output.open("a", encoding="utf-8") as handle:
+                  handle.write(f"{name}={value}\n")
+
+          if status == "ready":
+              write_output("provisioning_ready", "true")
+              write_output("credential_blocked", "false")
+              raise SystemExit(0)
+
+          is_external_capability_block = (
+              status == "blocked"
+              and code == "cloudflare_request_denied_or_failed"
+              and operation in {
+                  "account",
+                  "list_workers",
+                  "list_d1",
+                  "list_kv",
+                  "list_r2",
+                  "list_access",
+                  "access_organization",
+                  "workers_subdomain",
+              }
+              and http_status in {401, 403}
+          )
+
+          if is_external_capability_block:
+              write_output("provisioning_ready", "false")
+              write_output("credential_blocked", "true")
+              with github_summary.open("a", encoding="utf-8") as handle:
+                  handle.write("## Staging deploy blocked outside the repository\n\n")
+                  handle.write(
+                      "Accepted `main` stayed inside the verified source boundary, but the staging token "
+                      f"could not complete `{operation}`"
+                  )
+                  if http_status is not None:
+                      handle.write(f" (HTTP {http_status})")
+                  if error_codes:
+                      handle.write(f" with provider codes {error_codes}")
+                  handle.write(". The sanitized provisioning receipt was preserved and remote mutation was skipped.\n")
+              raise SystemExit(0)
+
+          print(json.dumps(report, indent=2, sort_keys=True))
+          raise SystemExit("staging provisioning failed for a source/configuration reason")
+          PY
       - name: Validate the generated staging configuration
+        if: steps.provision_result.outputs.provisioning_ready == 'true'
         run: |
           python3 scripts/verify-cloudflare-live.py --configuration-only
           cd cloudflare
           ./node_modules/.bin/wrangler deploy --config .generated/staging.wrangler.json --dry-run --outdir .generated/bundle
       - name: Apply and verify D1 migrations
+        if: steps.provision_result.outputs.provisioning_ready == 'true'
         working-directory: cloudflare
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
@@ -122,8 +195,10 @@ jobs:
           ./node_modules/.bin/wrangler d1 migrations apply DB --config .generated/staging.wrangler.json --remote
           ./node_modules/.bin/wrangler d1 execute DB --config .generated/staging.wrangler.json --remote --command "SELECT name FROM sqlite_master WHERE name IN ('organizations', 'prospects', 'jobs', 'prospects_fts') ORDER BY name" --json > .generated/staging-schema.json
       - name: Require the complete migrated schema
+        if: steps.provision_result.outputs.provisioning_ready == 'true'
         run: python3 scripts/verify-cloudflare-live.py --schema-only
       - name: Deploy the accepted Worker revision
+        if: steps.provision_result.outputs.provisioning_ready == 'true'
         working-directory: cloudflare
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
@@ -132,6 +207,7 @@ jobs:
           test "$(gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/main" --jq .object.sha)" = "$GITHUB_SHA"
           ./node_modules/.bin/wrangler deploy --config .generated/staging.wrangler.json
       - name: Verify live staging identity and authentication boundary
+        if: steps.provision_result.outputs.provisioning_ready == 'true'
         run: python3 scripts/verify-cloudflare-live.py
       - name: Preserve provisioning and deployment evidence
         if: ${{ !cancelled() }}

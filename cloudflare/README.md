@@ -34,7 +34,17 @@ does not prove D1, KV, R2 or Access authority.
 
 The staging workflow uses Node 24.19.0/npm 11.9.0 and the frozen Cloudflare lock.
 Pull requests run the local Worker and provisioning counterexamples without credentials.
-Accepted main runs the following sequence:
+Accepted `main` always verifies the source and then:
+
+- deploys staging when the protected token is authorized for the dedicated D1,
+  KV, R2, Access, and account reads; or
+- records a sanitized blocked receipt and skips remote mutation when the blocker
+  is an external credential-scope or provider-capability denial.
+
+That blocked receipt is evidence that the repo source stayed inside its allowed
+mutation boundary; it is not proof that staging is deployed.
+
+When authorization is present, the workflow runs the following sequence:
 
 1. Verify the current main revision and all required account/resource metadata.
 2. Reuse or create only `ucc-mca-staging` (D1), `ucc-mca-edge-staging-KV`,
@@ -69,11 +79,12 @@ python3 scripts/provision-cloudflare-staging.py --plan
 ```
 
 `--apply` performs the bounded creates and writes the generated configuration.
-The workflow owns migration, deployment and acceptance. A provider denial stops
-that execution with the operation, HTTP status and numeric error codes; token
-values and raw API responses never enter receipts. The existing account's Workers
-subdomain and Access organization must resolve. The workflow never activates a
-paid plan or creates a new account-wide identity organization.
+The workflow owns migration, deployment and acceptance. A provider denial records
+the operation, HTTP status and numeric error codes without printing token values
+or raw API responses. Source/configuration failures still fail the workflow.
+The existing account's Workers subdomain and Access organization must resolve.
+The workflow never activates a paid plan or creates a new account-wide identity
+organization.
 
 ### Cloudflare Access
 

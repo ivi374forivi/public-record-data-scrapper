@@ -1,5 +1,10 @@
 # Branch Management Policy
 
+> Historical policy note: the active standing-branch constitution now lives in
+> [`/home/runner/work/public-record-data-scrapper/public-record-data-scrapper/BRANCHES.md`](../BRANCHES.md).
+> Where this older cleanup-oriented policy conflicts with the recovered repo
+> workflow, `BRANCHES.md` wins.
+
 ## Overview
 
 This document defines the branch management policy for the `public-record-data-scrapper` repository to maintain code quality, enable collaboration, and ensure repository cleanliness.

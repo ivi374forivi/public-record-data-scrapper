@@ -1,8 +1,14 @@
 # Public Record Data Scraper — Deploy-Ready Build
 
-**Status:** ✅ DEPLOYMENT READY  
+> Historical build snapshot: this document records a 2026-06-28 build state.
+> Current deployment truth is governed by
+> [`/home/runner/work/public-record-data-scrapper/public-record-data-scrapper/README.md`](README.md),
+> [`/home/runner/work/public-record-data-scrapper/public-record-data-scrapper/cloudflare/README.md`](cloudflare/README.md),
+> and the live GitHub workflow results.
+
+**Status:** ⚠️ HISTORICAL BUILD SNAPSHOT — current `main` proof CI is green, but Cloudflare staging deployment remains externally blocked until the staging token can list D1 resources.  
 **Build Date:** 2026-06-28  
-**Latest Commit:** 7a67e74 "Security: Zod input validation on competitive and outreach routes"
+**Latest Commit at snapshot time:** 7a67e74 "Security: Zod input validation on competitive and outreach routes"
 
 ## Build Artifacts
 
