@@ -63,7 +63,7 @@
     "react-dom": "^19.0.0"
   },
   "devDependencies": {
-    "react-resizable-panels": "^4.10.0",
-    "recharts": "^3.8.1"
+    "react-resizable-panels": "^4.12.4",
+    "recharts": "^3.10.1"
   }
 }
