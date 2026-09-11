@@ -128,7 +128,7 @@
     "octokit": "^5.0.5",
     "ora": "^8.1.1",
     "pg": "^8.16.3",
-    "puppeteer": "^24.31.0",
+    "puppeteer": "^25.10.0",
     "puppeteer-extra": "^3.3.6",
     "puppeteer-extra-plugin-stealth": "^2.11.2",
     "react": "^19.0.0",
@@ -210,7 +210,19 @@
     "localtunnel": {
       "axios": "^1.7.4"
     },
-    "esbuild": "0.28.1"
+    "esbuild": "0.28.1",
+    "@expo/metro-config": {
+      "postcss": "8.5.28"
+    },
+    "metro@0.83.3": "0.83.8",
+    "metro-config@0.83.3": "0.83.8",
+    "metro-transform-worker@0.83.3": "0.83.8",
+    "metro@0.84.4": "0.84.5",
+    "metro-config@0.84.4": "0.84.5",
+    "metro-transform-worker@0.84.4": "0.84.5",
+    "xcode": {
+      "uuid": "11.1.1"
+    }
   },
   "packageManager": "npm@11.9.0"
 }
