@@ -50,6 +50,7 @@
     "postinstall": "node ./scripts/ensure-main-branch.mjs",
     "train:ml-model": "tsx scripts/trainMLModel.ts",
     "scrape": "tsx scripts/cli-scraper.ts",
+    "smoke": "node scripts/smoke-test.mjs",
     "scrape:scheduled": "tsx scripts/scheduled-run.ts",
     "migrate": "npm run db:migrate",
     "db:migrate": "tsx scripts/migrate.ts",

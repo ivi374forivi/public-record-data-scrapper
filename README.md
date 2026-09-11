@@ -178,6 +178,7 @@ npm run build:server     # Bundle dist/server.cjs and dist/worker.cjs
 npm run build:render     # Build web + server/worker bundles
 npm start                # Run dist/server.cjs
 npm run start:worker     # Run dist/worker.cjs
+npm run smoke            # Poll /api/health until the deployed API is live
 npm run dev:desktop      # Run apps/desktop dev script
 npm run dev:mobile       # Run apps/mobile Expo start script
 ```
@@ -354,12 +355,12 @@ The Express server exposes a RESTful API documented at `/api/docs` when running.
 
 ### Scrape API — auth: API key (`X-API-Key: prk_…` or `Authorization: Bearer prk_…`) or JWT
 
-| Method | Endpoint                             | Description                                   |
-| ------ | ------------------------------------ | --------------------------------------------- |
-| `GET`  | `/api/scrape/readiness/:stateCode`   | Check whether a state scraper is available    |
-| `POST` | `/api/scrape/ucc`                    | Synchronous UCC search; body: `company_name`, `state`, optional `limit` (1–1000, default 100) |
-| `POST` | `/api/scrape/jobs`                   | Enqueue async scrape (same body as above); returns 202 + `jobId` + `pollUrl` immediately |
-| `GET`  | `/api/scrape/jobs/:jobId`            | Poll async job; returns `pending`, `processing`, `completed`, or `failed` with results when done |
+| Method | Endpoint                           | Description                                                                                      |
+| ------ | ---------------------------------- | ------------------------------------------------------------------------------------------------ |
+| `GET`  | `/api/scrape/readiness/:stateCode` | Check whether a state scraper is available                                                       |
+| `POST` | `/api/scrape/ucc`                  | Synchronous UCC search; body: `company_name`, `state`, optional `limit` (1–1000, default 100)    |
+| `POST` | `/api/scrape/jobs`                 | Enqueue async scrape (same body as above); returns 202 + `jobId` + `pollUrl` immediately         |
+| `GET`  | `/api/scrape/jobs/:jobId`          | Poll async job; returns `pending`, `processing`, `completed`, or `failed` with results when done |
 
 ### Dashboard API — auth: JWT
 
@@ -377,20 +378,20 @@ The Express server exposes a RESTful API documented at `/api/docs` when running.
 
 ### API key management — auth: JWT, role: admin
 
-| Method   | Endpoint        | Description          |
-| -------- | --------------- | -------------------- |
-| `POST`   | `/api/keys`     | Create an API key    |
-| `GET`    | `/api/keys`     | List API keys        |
-| `DELETE` | `/api/keys/:id` | Revoke an API key    |
+| Method   | Endpoint        | Description       |
+| -------- | --------------- | ----------------- |
+| `POST`   | `/api/keys`     | Create an API key |
+| `GET`    | `/api/keys`     | List API keys     |
+| `DELETE` | `/api/keys/:id` | Revoke an API key |
 
 Full endpoint list: [server/openapi.yaml](server/openapi.yaml)
 
 ### Data Tiers
 
-| Tier                    | Sources                                                           | Cost               |
-| ----------------------- | ----------------------------------------------------------------- | ------------------ |
-| **Free / OSS (no key)** | SEC EDGAR, OSHA, USPTO, Census                                    | No charge          |
-| **Optional, key-gated** | SAM.gov, D&B, Clearbit, ZoomInfo (fail closed without an API key) | Vendor-dependent   |
+| Tier                    | Sources                                                           | Cost             |
+| ----------------------- | ----------------------------------------------------------------- | ---------------- |
+| **Free / OSS (no key)** | SEC EDGAR, OSHA, USPTO, Census                                    | No charge        |
+| **Optional, key-gated** | SAM.gov, D&B, Clearbit, ZoomInfo (fail closed without an API key) | Vendor-dependent |
 
 ---
 
@@ -454,6 +455,8 @@ Download and run a release artifact:
 tar -xzf ucc-mca-platform-v1.2.3.tar.gz && cd package
 npm ci --omit=dev && node dist/server.cjs
 curl -fsS http://localhost:3000/api/health   # smoke test
+# or
+SMOKE_URL=http://localhost:3000 npm run smoke
 ```
 
 ### Production (AWS via Terraform)
