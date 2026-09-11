@@ -106,15 +106,24 @@ jobs:
           test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
           test "$(gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/main" --jq .object.sha)" = "$GITHUB_SHA"
       - name: Provision or reuse dedicated staging resources
+        id: provision_staging
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-        run: python3 scripts/provision-cloudflare-staging.py --apply
+        run: |
+          status=0
+          python3 scripts/provision-cloudflare-staging.py --apply || status=$?
+          echo "exit_status=$status" >> "$GITHUB_OUTPUT"
+      - name: Classify provisioning result
+        id: provision_result
+        run: python3 scripts/classify-cloudflare-staging-provisioning.py
       - name: Validate the generated staging configuration
+        if: steps.provision_result.outputs.provisioning_ready == 'true'
         run: |
           python3 scripts/verify-cloudflare-live.py --configuration-only
           cd cloudflare
           ./node_modules/.bin/wrangler deploy --config .generated/staging.wrangler.json --dry-run --outdir .generated/bundle
       - name: Apply and verify D1 migrations
+        if: steps.provision_result.outputs.provisioning_ready == 'true'
         working-directory: cloudflare
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
@@ -122,8 +131,10 @@ jobs:
           ./node_modules/.bin/wrangler d1 migrations apply DB --config .generated/staging.wrangler.json --remote
           ./node_modules/.bin/wrangler d1 execute DB --config .generated/staging.wrangler.json --remote --command "SELECT name FROM sqlite_master WHERE name IN ('organizations', 'prospects', 'jobs', 'prospects_fts') ORDER BY name" --json > .generated/staging-schema.json
       - name: Require the complete migrated schema
+        if: steps.provision_result.outputs.provisioning_ready == 'true'
         run: python3 scripts/verify-cloudflare-live.py --schema-only
       - name: Deploy the accepted Worker revision
+        if: steps.provision_result.outputs.provisioning_ready == 'true'
         working-directory: cloudflare
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
@@ -132,6 +143,7 @@ jobs:
           test "$(gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/main" --jq .object.sha)" = "$GITHUB_SHA"
           ./node_modules/.bin/wrangler deploy --config .generated/staging.wrangler.json
       - name: Verify live staging identity and authentication boundary
+        if: steps.provision_result.outputs.provisioning_ready == 'true'
         run: python3 scripts/verify-cloudflare-live.py
       - name: Preserve provisioning and deployment evidence
         if: ${{ !cancelled() }}
