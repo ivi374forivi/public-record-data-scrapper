@@ -1,6 +1,7 @@
 import { existsSync, mkdirSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import puppeteer, { Browser, Page } from 'puppeteer'
+import { resolveBrowserExecutablePath } from '../../server/utils/browser-executable'
 
 import { BaseScraper, ScraperConfig, ScraperResult } from './base-scraper'
 
@@ -37,6 +38,7 @@ export abstract class BasePuppeteerScraper extends BaseScraper {
   protected async getBrowser(): Promise<Browser> {
     if (!this.browser) {
       this.browser = await puppeteer.launch({
+        executablePath: resolveBrowserExecutablePath(),
         headless: this.headless,
         args: DEFAULT_LAUNCH_ARGS
       })

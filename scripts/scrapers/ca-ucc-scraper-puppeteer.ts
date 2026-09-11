@@ -15,6 +15,7 @@ import { BaseScraper, ScraperConfig, ScraperResult, UCCFiling } from './base-scr
 
 import puppeteerExtra from 'puppeteer-extra'
 import StealthPlugin from 'puppeteer-extra-plugin-stealth'
+import { resolveBrowserExecutablePath } from '../../server/utils/browser-executable'
 
 // Enable stealth mode
 puppeteerExtra.use(StealthPlugin())
@@ -46,6 +47,7 @@ export class CaliforniaUCCScraperPuppeteer extends BaseScraper {
     // Assign through a local so the non-null type survives the await —
     // TS resets property narrowing across await boundaries.
     const browser = await puppeteerExtra.launch({
+      executablePath: resolveBrowserExecutablePath(),
       headless: true,
       args: [
         '--no-sandbox',

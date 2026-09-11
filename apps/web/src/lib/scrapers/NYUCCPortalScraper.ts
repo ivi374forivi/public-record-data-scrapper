@@ -17,6 +17,7 @@
 import { existsSync, mkdirSync, writeFileSync } from 'fs'
 import { join } from 'path'
 import type { UCCFiling } from '@public-records/core'
+import { resolveBrowserExecutablePath } from '../../../../../server/utils/browser-executable'
 
 export interface ScraperConfig {
   headless: boolean
@@ -87,6 +88,7 @@ export class NYUCCPortalScraper {
 
       const { chromium } = playwright
       browser = await chromium.launch({
+        executablePath: resolveBrowserExecutablePath(),
         headless: this.config.headless,
         proxy: this.config.proxyUrl ? { server: this.config.proxyUrl } : undefined
       })
@@ -288,7 +290,10 @@ export class NYUCCPortalScraper {
       }
 
       const { chromium } = playwright
-      browser = await chromium.launch({ headless: this.config.headless })
+      browser = await chromium.launch({
+        executablePath: resolveBrowserExecutablePath(),
+        headless: this.config.headless
+      })
       this.lastBrowser = browser
       const page = await browser.newPage()
       this.lastPage = page

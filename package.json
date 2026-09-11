@@ -36,6 +36,7 @@
     "test:server:coverage": "vitest --config vitest.config.server.ts --coverage",
     "test:scrapers:unit": "vitest run --config vitest.config.scripts.ts",
     "test:scrapers:unit:coverage": "vitest run --config vitest.config.scripts.ts --coverage",
+    "test:browser-runtime": "node scripts/test-browser-runtime.mjs",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
     "test:e2e:headed": "playwright test --headed",
@@ -128,6 +129,7 @@
     "octokit": "^5.0.5",
     "ora": "^8.1.1",
     "pg": "^8.16.3",
+    "playwright": "1.60.0",
     "puppeteer": "^25.10.0",
     "puppeteer-extra": "^3.3.6",
     "puppeteer-extra-plugin-stealth": "^2.11.2",
@@ -154,6 +156,7 @@
   "devDependencies": {
     "@eslint/js": "^9.39.1",
     "@playwright/test": "^1.49.1",
+    "@sparticuz/chromium": "152.0.0",
     "@tailwindcss/postcss": "^4.1.18",
     "@testing-library/dom": "^10.4.0",
     "@testing-library/jest-dom": "^6.9.1",
