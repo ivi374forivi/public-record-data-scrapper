@@ -50,10 +50,16 @@ jobs:
         run: npm install --global npm@11.9.0 --ignore-scripts --no-audit --no-fund
       - name: Frozen workspace install
         run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Provision offline Chromium for browser runtime checks
+        if: ${{ matrix.check == 'scraper-tests' || matrix.check == 'build' }}
+        id: browser-runtime
+        run: node scripts/provision-browser-runtime.mjs >> "$GITHUB_OUTPUT"
       - name: Run independent compatibility check
         env:
           CHECK: ${{ matrix.check }}
           REVIEW_BASE: ${{ github.event.pull_request.base.sha || github.event.before || github.sha }}
+          PUPPETEER_EXECUTABLE_PATH: ${{ steps.browser-runtime.outputs.executable_path }}
+          CHROMIUM_EXECUTABLE_PATH: ${{ steps.browser-runtime.outputs.executable_path }}
         run: |
           case "$CHECK" in
             format) node scripts/check-format.mjs "$REVIEW_BASE" ;;
@@ -61,7 +67,7 @@ jobs:
             typecheck) npm run typecheck ;;
             server-tests) ./node_modules/.bin/vitest run --config vitest.config.server.ts --coverage.enabled=false ;;
             frontend-tests) npm --workspace apps/web run test -- --run ;;
-            scraper-tests) npm run test:scrapers:unit ;;
+            scraper-tests) npm run test:scrapers:unit && npm run test:browser-runtime ;;
             policy-tests) node --test scripts/__tests__/dependency-evidence.test.mjs scripts/__tests__/check-format.test.mjs && python3 -m unittest discover -s scripts/dependencies -p 'test_ruleset_plan.py' ;;
             build) npm run build:render ;;
             *) exit 1 ;;
