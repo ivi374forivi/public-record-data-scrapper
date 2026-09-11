@@ -113,9 +113,7 @@ describe('Deals API', () => {
     it('should fail closed (403) when the token has no org', async () => {
       const noOrgHeader = createAuthHeader('test-user-123', { orgId: null })
 
-      const response = await request(app)
-        .get('/api/deals')
-        .set('Authorization', noOrgHeader)
+      const response = await request(app).get('/api/deals').set('Authorization', noOrgHeader)
 
       expect(response.status).toBe(403)
       expect(response.body.error.code).toBe('FORBIDDEN')
@@ -446,6 +444,19 @@ describe('Deals API', () => {
       expect(response.status).toBe(200)
       expect(response.body.factor_rate).toBe(1.35)
     })
+
+    it('should reject unexpected update fields before calling the service', async () => {
+      const response = await request(app)
+        .put(`/api/deals/${mockDealId}`)
+        .set('Authorization', authHeader)
+        .send({
+          amount_requested: 75000,
+          admin_override: true
+        })
+
+      expect(response.status).toBe(400)
+      expect(mockUpdate).not.toHaveBeenCalled()
+    })
   })
 
   // NOTE: There is intentionally no DELETE /api/deals/:id endpoint — DealsService
@@ -497,6 +508,19 @@ describe('Deals API', () => {
         })
 
       expect(response.status).toBe(404)
+    })
+
+    it('should reject unexpected stage-move fields before calling the service', async () => {
+      const response = await request(app)
+        .patch(`/api/deals/${mockDealId}/stage`)
+        .set('Authorization', authHeader)
+        .send({
+          stage_id: mockStageId,
+          force: true
+        })
+
+      expect(response.status).toBe(400)
+      expect(mockMoveToStage).not.toHaveBeenCalled()
     })
   })
 
@@ -553,6 +577,22 @@ describe('Deals API', () => {
         })
 
       expect(response.status).toBe(400)
+    })
+
+    it('should reject unexpected document upload fields before ownership lookup', async () => {
+      const response = await request(app)
+        .post(`/api/deals/${mockDealId}/documents`)
+        .set('Authorization', authHeader)
+        .send({
+          document_type: 'bank_statement',
+          file_name: 'test.pdf',
+          file_path: '/uploads/test.pdf',
+          bypass_scan: true
+        })
+
+      expect(response.status).toBe(400)
+      expect(mockGetById).not.toHaveBeenCalled()
+      expect(mockUploadDocument).not.toHaveBeenCalled()
     })
   })
 
@@ -619,6 +659,21 @@ describe('Deals API', () => {
         .send({ verified_by: '550e8400-e29b-41d4-a716-446655440099' })
 
       expect(response.status).toBe(400)
+      expect(mockVerifyDocument).not.toHaveBeenCalled()
+    })
+
+    it('should reject unexpected verification fields before ownership lookup', async () => {
+      const response = await request(app)
+        .patch(`/api/deals/${mockDealId}/documents/${mockDocumentId}/verify`)
+        .set('Authorization', authHeader)
+        .send({
+          verified_by: '550e8400-e29b-41d4-a716-446655440099',
+          override_owner_check: true
+        })
+
+      expect(response.status).toBe(400)
+      expect(mockGetById).not.toHaveBeenCalled()
+      expect(mockVerifyDocument).not.toHaveBeenCalled()
     })
   })
 
